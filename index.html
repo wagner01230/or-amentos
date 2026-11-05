@@ -1,0 +1,2387 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WBS System - Casa da Elétrica</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --blue:#0a3d8f;--blue2:#0d4fb8;--blue-light:#e6efff;
+  --yellow:#ffc400;--yellow2:#ffdb4d;--yellow-light:#fff8e1;
+  --gray:#f4f6fa;--gray2:#e2e8f0;--text:#1a202c;--text-light:#4a5568;
+  --danger:#d32f2f;--success:#2e7d32;--warning:#ed6c02;--border:#cbd5e0;
+  --shadow:0 2px 8px rgba(10,61,143,.12);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--gray);color:var(--text);font-size:15px;line-height:1.4;margin:0;padding:0}
+header{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;padding:12px 16px;position:sticky;top:0;z-index:100;box-shadow:0 2px 10px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:space-between;gap:10px;transition:margin-left .25s}
+header .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:18px;letter-spacing:.5px}
+header .brand .logo{width:36px;height:36px;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:900;font-size:14px}
+header .brand .sub{font-size:10px;opacity:.85;font-weight:500;letter-spacing:1px}
+header .company{font-size:11px;opacity:.9;text-align:right;max-width:140px;line-height:1.2}
+
+/* Layout com sidebar */
+.layout{display:flex;min-height:calc(100vh - 60px);margin-left:0;transition:margin-left .25s}
+
+nav.sidebar{position:fixed;top:0;left:0;bottom:0;width:230px;background:linear-gradient(180deg,var(--blue),var(--blue2));color:#fff;z-index:200;display:flex;flex-direction:column;padding:0;box-shadow:2px 0 12px rgba(0,0,0,.15);transform:translateX(-100%);transition:transform .25s;overflow-y:auto}
+nav.sidebar.open{transform:translateX(0)}
+nav.sidebar .sb-brand{display:flex;align-items:center;gap:10px;padding:16px;border-bottom:1px solid rgba(255,255,255,.15);flex:0 0 auto}
+nav.sidebar .sb-brand .logo{width:38px;height:38px;background:var(--yellow);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:900;font-size:14px;flex:0 0 auto}
+nav.sidebar .sb-brand .tt{font-weight:800;font-size:15px;letter-spacing:.5px}
+nav.sidebar .sb-brand .ss{font-size:10px;opacity:.8;letter-spacing:1px}
+nav.sidebar .sb-items{flex:1;padding:8px 0;overflow-y:auto}
+nav.sidebar button{width:100%;background:none;border:none;color:rgba(255,255,255,.85);padding:11px 16px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:12px;cursor:pointer;text-align:left;font-family:inherit;transition:.15s;border-left:3px solid transparent}
+nav.sidebar button:hover{background:rgba(255,255,255,.08);color:#fff}
+nav.sidebar button.active{background:rgba(255,196,0,.18);color:#fff;border-left-color:var(--yellow);font-weight:800}
+nav.sidebar button .ic{font-size:18px;width:22px;text-align:center;flex:0 0 auto}
+nav.sidebar .sb-foot{padding:10px 16px;font-size:10px;opacity:.7;border-top:1px solid rgba(255,255,255,.15);letter-spacing:.5px}
+
+.hamburger{background:rgba(255,255,255,.15);border:none;color:#fff;width:38px;height:38px;border-radius:8px;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.hamburger:active{transform:scale(.95)}
+
+.sb-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:150;display:none;opacity:0;transition:opacity .25s}
+.sb-overlay.show{display:block;opacity:1}
+
+main{padding:14px;max-width:1100px;margin:0 auto;width:100%;flex:1}
+
+@media(min-width:900px){
+  header{margin-left:230px}
+  .layout{margin-left:230px}
+  nav.sidebar{transform:translateX(0)}
+  .hamburger{display:none}
+  .sb-overlay{display:none!important}
+}
+
+h1{font-size:20px;margin-bottom:12px;color:var(--blue);font-weight:700}
+h2{font-size:17px;margin:14px 0 10px;color:var(--blue);font-weight:700}
+h3{font-size:15px;margin:10px 0 8px;font-weight:700}
+.card{background:#fff;border-radius:12px;padding:14px;margin-bottom:12px;box-shadow:var(--shadow);border:1px solid var(--gray2)}
+.card.blue{background:linear-gradient(135deg,var(--blue),var(--blue2));color:#fff;border:none}
+.card.yellow{background:linear-gradient(135deg,var(--yellow),var(--yellow2));color:var(--blue);border:none}
+.grid{display:grid;gap:10px}
+.grid.c2{grid-template-columns:repeat(2,1fr)}
+.grid.c3{grid-template-columns:repeat(3,1fr)}
+.grid.c4{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+@media(max-width:480px){.grid.c3{grid-template-columns:repeat(2,1fr)}}
+.kpi{padding:12px;border-radius:10px;background:#fff;border:1px solid var(--gray2);box-shadow:var(--shadow)}
+.kpi .lbl{font-size:11px;color:var(--text-light);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px}
+.kpi .val{font-size:18px;font-weight:800;color:var(--blue)}
+.kpi.danger .val{color:var(--danger)}
+.kpi.success .val{color:var(--success)}
+.kpi.warn .val{color:var(--warning)}
+button.btn{background:var(--blue);color:#fff;border:none;padding:11px 16px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:inherit}
+button.btn:active{transform:scale(.97)}
+button.btn.yellow{background:var(--yellow);color:var(--blue)}
+button.btn.outline{background:#fff;color:var(--blue);border:1.5px solid var(--blue)}
+button.btn.danger{background:var(--danger)}
+button.btn.success{background:var(--success)}
+button.btn.ghost{background:transparent;color:var(--blue);border:1px solid var(--border)}
+button.btn.sm{padding:6px 10px;font-size:12px}
+button.btn.block{width:100%}
+input,select,textarea{width:100%;padding:10px 12px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);margin-bottom:2px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,61,143,.1)}
+label{display:block;font-size:12px;font-weight:700;color:var(--text-light);margin:8px 0 4px;text-transform:uppercase;letter-spacing:.3px}
+.field{margin-bottom:8px}
+.row{display:flex;gap:8px;flex-wrap:wrap}
+.row>*{flex:1;min-width:120px}
+.row.tight{gap:6px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:8px;overflow:hidden}
+th{background:var(--blue-light);color:var(--blue);text-align:left;padding:9px 8px;font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+td{padding:9px 8px;border-top:1px solid var(--gray2);vertical-align:top}
+tr:hover td{background:#fafbfc}
+.tbl-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--gray2)}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.4px}
+.b-blue{background:var(--blue-light);color:var(--blue)}
+.b-green{background:#e8f5e9;color:var(--success)}
+.b-red{background:#ffebee;color:var(--danger)}
+.b-yellow{background:var(--yellow-light);color:#8a6d00}
+.b-gray{background:var(--gray2);color:var(--text-light)}
+.b-orange{background:#fff3e0;color:var(--warning)}
+.empty{text-align:center;padding:30px 16px;color:var(--text-light);font-size:13px}
+.empty .big{font-size:40px;margin-bottom:8px;opacity:.6}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.actions button{flex:0 0 auto}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;box-shadow:0 4px 20px rgba(0,0,0,.3);max-width:90%;text-align:center;animation:tin .3s}
+.toast.error{background:var(--danger)}.toast.success{background:var(--success)}.toast.warn{background:var(--warning)}
+@keyframes tin{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media(min-width:640px){.modal-bg{align-items:center;padding:20px}}
+.modal{background:#fff;border-radius:16px 16px 0 0;width:100%;max-width:640px;max-height:92vh;overflow-y:auto;animation:mup .25s}
+@media(min-width:640px){.modal{border-radius:16px}}
+@keyframes mup{from{transform:translateY(40px);opacity:0}to{transform:translateY(0);opacity:1}}
+.modal-head{position:sticky;top:0;background:#fff;padding:14px 16px;border-bottom:1px solid var(--gray2);display:flex;justify-content:space-between;align-items:center;z-index:2;gap:10px}
+.modal-head h3{margin:0;font-size:16px;color:var(--blue)}
+.modal-head .close{background:var(--gray);border:none;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;color:var(--text-light);flex:0 0 auto}
+.modal-body{padding:14px 16px}
+.modal-foot{padding:12px 16px;border-top:1px solid var(--gray2);display:flex;gap:8px;position:sticky;bottom:0;background:#fff;flex-wrap:wrap}
+.modal-foot button{flex:1;min-width:100px}
+.hidden{display:none!important}
+.tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px}
+.tabs button{background:#fff;border:1.5px solid var(--border);color:var(--text-light);padding:8px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit}
+.tabs button.active{background:var(--blue);color:#fff;border-color:var(--blue)}
+.prod-line{background:var(--gray);border-radius:8px;padding:8px;margin-bottom:6px}
+.prod-line .obs{font-size:11px;color:var(--text-light);font-style:italic;margin-top:2px}
+.person-card{background:#fff;border:1px solid var(--gray2);border-radius:10px;padding:12px;margin-bottom:8px;cursor:pointer}
+.person-card:active{background:var(--blue-light)}
+.person-card .name{font-weight:700;color:var(--blue);font-size:15px}
+.person-card .meta{font-size:12px;color:var(--text-light);margin-top:3px}
+.person-card .saldo{float:right;font-weight:800;color:var(--danger);font-size:14px}
+.person-card .saldo.ok{color:var(--success)}
+.progress{height:6px;background:var(--gray2);border-radius:3px;overflow:hidden;margin-top:6px}
+.progress>div{height:100%;background:var(--blue);border-radius:3px}
+.progress.warn>div{background:var(--warning)}
+.progress.danger>div{background:var(--danger)}
+.file-btn{position:relative;overflow:hidden;display:inline-block}
+.file-btn input[type=file]{position:absolute;left:0;top:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.sec-title{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
+.sec-title h2{margin:0}
+.help{font-size:11px;color:var(--text-light);margin-top:3px}
+.search-bar{position:relative;margin-bottom:10px}
+.search-bar input{padding-left:36px;margin:0}
+.search-bar .ic{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:16px;opacity:.5}
+.chip{display:inline-block;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--blue-light);color:var(--blue);margin:2px}
+.chip.sel{background:var(--blue);color:#fff}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.inline{display:flex;gap:8px;align-items:center}
+.inline>*{flex:1}
+.inline .fixed{flex:0 0 auto}
+.mini{font-size:11px;color:var(--text-light)}
+.big-total{font-size:26px;font-weight:900;color:var(--blue);text-align:right}
+.big-total small{font-size:13px;font-weight:600;color:var(--text-light)}
+.warn-box{background:var(--yellow-light);border-left:4px solid var(--yellow);padding:10px 12px;border-radius:6px;font-size:13px;margin:10px 0}
+.danger-box{background:#ffebee;border-left:4px solid var(--danger);padding:10px 12px;border-radius:6px;font-size:13px;margin:10px 0}
+.info-box{background:var(--blue-light);border-left:4px solid var(--blue);padding:10px 12px;border-radius:6px;font-size:13px;margin:10px 0}
+.list-item{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--gray2);gap:8px}
+.list-item:last-child{border-bottom:none}
+.list-item .l{flex:1;min-width:0}
+.list-item .r{text-align:right;font-weight:700;color:var(--blue);white-space:nowrap}
+.orc-preview{background:#fff;padding:20px;border-radius:8px;font-family:Arial,sans-serif;color:#000}
+.selo{display:inline-block;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800}
+</style>
+</head>
+<body>
+
+<nav class="sidebar" id="sidebar">
+  <div class="sb-brand">
+    <div class="logo">WBS</div>
+    <div>
+      <div class="tt">WBS SYSTEM</div>
+      <div class="ss" id="sb-company">CASA DA ELÉTRICA</div>
+    </div>
+  </div>
+  <div class="sb-items" id="navItems"></div>
+  <div class="sb-foot">WBS System v1.0</div>
+</nav>
+<div class="sb-overlay" id="sbOverlay"></div>
+
+<header>
+  <div class="brand">
+    <div class="logo">WBS</div>
+    <div>
+      <div>WBS SYSTEM</div>
+      <div class="sub" id="hdr-company">CASA DA ELÉTRICA</div>
+    </div>
+  </div>
+  <div class="company" id="hdr-company-info"></div>
+</header>
+
+<div class="layout">
+  <main id="app"></main>
+</div>
+
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script>
+/* ============================================================
+   WBS SYSTEM - CASA DA ELÉTRICA
+   ============================================================ */
+
+const $ = (s,r=document)=>r.querySelector(s);
+const $$ = (s,r=document)=>Array.from(r.querySelectorAll(s));
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+const fmtMoney = c => 'R$ '+((c||0)/100).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+const parseMoney = v => {
+  if(typeof v==='number') return Math.round(v*100);
+  if(!v) return 0;
+  v = String(v).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
+  const n = parseFloat(v); return isNaN(n)?0:Math.round(n*100);
+};
+const fmtDate = d => {
+  if(!d) return '';
+  const dt = new Date(d);
+  if(isNaN(dt)) return '';
+  return dt.toLocaleDateString('pt-BR');
+};
+const fmtDateTime = d => {
+  if(!d) return '';
+  const dt = new Date(d);
+  return dt.toLocaleDateString('pt-BR')+' '+dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+};
+const todayISO = ()=>new Date().toISOString().slice(0,10);
+const nowISO = ()=>new Date().toISOString();
+const addDays = (iso,days)=>{
+  const d = new Date(iso+'T00:00:00');
+  d.setDate(d.getDate()+days);
+  return d.toISOString().slice(0,10);
+};
+const daysDiff = (isoA,isoB)=>{
+  const a = new Date(isoA+'T00:00:00');
+  const b = new Date(isoB+'T00:00:00');
+  return Math.round((a-b)/86400000);
+};
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const toast = (msg,type='')=>{
+  const t = document.createElement('div');
+  t.className = 'toast '+type;
+  t.textContent = msg;
+  $('#toast-root').appendChild(t);
+  setTimeout(()=>{t.style.opacity='0';t.style.transition='opacity .3s';setTimeout(()=>t.remove(),300)},2600);
+};
+const confirmar = (msg,titulo='Confirmação')=>new Promise(res=>{
+  const html = `<div class="modal-bg"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h3>${esc(titulo)}</h3></div>
+    <div class="modal-body"><p style="font-size:14px;line-height:1.5;white-space:pre-wrap">${esc(msg)}</p></div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="ccancel">Cancelar</button>
+      <button class="btn" id="cok">Confirmar</button>
+    </div></div></div>`;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const el = wrap.firstChild;
+  document.body.appendChild(el);
+  const done = v=>{el.remove();res(v)};
+  el.querySelector('#ccancel').onclick=()=>done(false);
+  el.querySelector('#cok').onclick=()=>done(true);
+});
+const prompt2 = (titulo,label,val='',tipo='text')=>new Promise(res=>{
+  const html = `<div class="modal-bg"><div class="modal" style="max-width:420px">
+    <div class="modal-head"><h3>${esc(titulo)}</h3></div>
+    <div class="modal-body"><label>${esc(label)}</label><input id="pval" type="${tipo}" value="${esc(val)}"></div>
+    <div class="modal-foot">
+      <button class="btn ghost" id="pcancel">Cancelar</button>
+      <button class="btn" id="pok">OK</button>
+    </div></div></div>`;
+  const wrap = document.createElement('div');
+  wrap.innerHTML = html;
+  const el = wrap.firstChild;
+  document.body.appendChild(el);
+  const inp = el.querySelector('#pval');
+  inp.focus();
+  const done = v=>{el.remove();res(v)};
+  el.querySelector('#pcancel').onclick=()=>done(null);
+  el.querySelector('#pok').onclick=()=>done(inp.value);
+  inp.onkeydown=e=>{if(e.key==='Enter')done(inp.value)};
+});
+
+// ---------- BANCO ----------
+const DB_NAME = 'wbs_system_db';
+const DB_VERSION = 3;
+let _db = null;
+const STORES = ['produtos','categorias','clientes','orcamentos','contador','retiradas','dividas','pagamentos','distribuicoes','estornos','historico','config','classificacoes','meta'];
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const req = indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded = e=>{
+      const db = req.result;
+      STORES.forEach(name=>{
+        if(!db.objectStoreNames.contains(name)){
+          let opts = {keyPath:'id'};
+          if(name==='contador') opts = {keyPath:'nome'};
+          if(name==='config') opts = {keyPath:'chave'};
+          if(name==='meta') opts = {keyPath:'chave'};
+          db.createObjectStore(name,opts);
+        }
+      });
+    };
+    req.onsuccess = ()=>{_db = req.result; resolve(_db)};
+    req.onerror = ()=>reject(req.error);
+  });
+}
+function tx(store,mode='readonly'){return _db.transaction(store,mode).objectStore(store);}
+function dbGetAll(store){return new Promise((res,rej)=>{const r=tx(store).getAll();r.onsuccess=()=>res(r.result||[]);r.onerror=()=>rej(r.error);});}
+function dbGet(store,key){return new Promise((res,rej)=>{const r=tx(store).get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbPut(store,obj){return new Promise((res,rej)=>{const r=tx(store,'readwrite').put(obj);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+function dbDelete(store,key){return new Promise((res,rej)=>{const r=tx(store,'readwrite').delete(key);r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+function dbClear(store){return new Promise((res,rej)=>{const r=tx(store,'readwrite').clear();r.onsuccess=()=>res();r.onerror=()=>rej(r.error);});}
+
+// ---------- ESTADO ----------
+const State = {
+  config:{},produtos:[],categorias:[],clientes:[],orcamentos:[],retiradas:[],
+  dividas:[],pagamentos:[],distrib:[],estornos:[],historico:[],classificacoes:[]
+};
+
+async function loadState(){
+  [State.produtos,State.categorias,State.clientes,State.orcamentos,State.retiradas,
+   State.dividas,State.pagamentos,State.distrib,State.estornos,State.historico,
+   State.classificacoes] = await Promise.all([
+    dbGetAll('produtos'),dbGetAll('categorias'),dbGetAll('clientes'),dbGetAll('orcamentos'),
+    dbGetAll('retiradas'),dbGetAll('dividas'),dbGetAll('pagamentos'),dbGetAll('distribuicoes'),
+    dbGetAll('estornos'),dbGetAll('historico'),dbGetAll('classificacoes')
+  ]);
+  const cfg = await dbGetAll('config');
+  State.config = {};
+  cfg.forEach(c=>State.config[c.chave]=c.valor);
+  applyDefaults();
+  updateHeader();
+}
+function applyDefaults(){
+  const def = {nomeFantasia:'CASA DA ELÉTRICA',razaoSocial:'CASA DA ELÉTRICA',cnpj:'',endereco:'',cep:'',telefone:'',whatsapp:'',pix:'',logo:'',rodapePadrao:'Obrigado pela preferência!',validadePadrao:7,modeloPadrao:'moderno',prazoFiadoPadrao:15};
+  Object.keys(def).forEach(k=>{ if(State.config[k]===undefined) State.config[k]=def[k]; });
+}
+async function saveConfig(chave,valor){
+  State.config[chave]=valor;
+  await dbPut('config',{chave,valor});
+  updateHeader();
+}
+function updateHeader(){
+  const nome = State.config.nomeFantasia||'CASA DA ELÉTRICA';
+  $('#hdr-company').textContent = nome;
+  $('#hdr-company-info').textContent = nome;
+  const sb = $('#sb-company'); if(sb) sb.textContent = nome;
+}
+async function logHist(tipo,ref,antes,depois,obs){
+  const h = {id:uid(),tipo,ref,antes:antes||null,depois:depois||null,obs:obs||'',data:nowISO()};
+  State.historico.push(h);
+  await dbPut('historico',h);
+}
+
+// ---------- STATUS ----------
+function situacaoDivida(d,hoje=todayISO()){
+  if(d.estornada) return {label:'Estornado',cls:'b-gray'};
+  if(d.saldo<=0) return {label:'Quitado',cls:'b-green'};
+  if(d.saldo < d.valorTotal) return {label:d.vencimento<hoje?'Vencido (parcial)':'Parcial',cls:d.vencimento<hoje?'b-red':'b-orange'};
+  if(d.vencimento<hoje) return {label:'Vencido',cls:'b-red'};
+  if(d.vencimento===hoje) return {label:'Vence hoje',cls:'b-yellow'};
+  return {label:'Em dia',cls:'b-blue'};
+}
+function calcularSaldo(d){
+  const pagos = State.distrib.filter(x=>x.dividaId===d.id).reduce((s,x)=>s+x.valor,0);
+  const est = State.estornos.filter(e=>e.dividaId===d.id && e.status==='confirmado').reduce((s,e)=>s+(e.valorAbatido||0),0);
+  return Math.max(0,d.valorTotal - pagos - est);
+}
+function recalcDividas(){State.dividas.forEach(d=>{d.saldo=calcularSaldo(d);});}
+function dividasAbertasPessoa(pessoaId){return State.dividas.filter(d=>d.pessoaId===pessoaId&&!d.estornada&&d.saldo>0);}
+function saldoPessoa(pessoaId){return dividasAbertasPessoa(pessoaId).reduce((s,d)=>s+d.saldo,0);}
+function totalReceber(){return State.dividas.filter(d=>!d.estornada).reduce((s,d)=>s+d.saldo,0);}
+function totalVencido(){const hj=todayISO();return State.dividas.filter(d=>!d.estornada&&d.saldo>0&&d.vencimento<hj).reduce((s,d)=>s+d.saldo,0);}
+function totalEmDia(){const hj=todayISO();return State.dividas.filter(d=>!d.estornada&&d.saldo>0&&d.vencimento>=hj).reduce((s,d)=>s+d.saldo,0);}
+function totalRecebidoMes(){const ym=todayISO().slice(0,7);return State.pagamentos.filter(p=>p.data.slice(0,7)===ym).reduce((s,p)=>s+p.valor,0);}
+
+// ---------- NAVEGAÇÃO ----------
+const TELAS = {
+  home:{ic:'🏠',label:'Painel'},
+  novoOrc:{ic:'📝',label:'Orçamento'},
+  produtos:{ic:'📦',label:'Produtos'},
+  clientes:{ic:'👥',label:'Clientes'},
+  historico:{ic:'📋',label:'Histórico'},
+  parceiros:{ic:'🤝',label:'Parceiros'},
+  contas:{ic:'💳',label:'Contas'},
+  recebimentos:{ic:'💰',label:'Receber'},
+  relatorios:{ic:'📊',label:'Relatórios'},
+  backup:{ic:'💾',label:'Backup'},
+  config:{ic:'⚙️',label:'Config'}
+};
+let telaAtual = 'home';
+let sidebarAberto = false;
+
+function renderNav(){
+  const items = $('#navItems');
+  items.innerHTML = Object.keys(TELAS).map(k=>`
+    <button data-nav="${k}" class="${k===telaAtual?'active':''}">
+      <span class="ic">${TELAS[k].ic}</span>${TELAS[k].label}
+    </button>`).join('');
+  items.querySelectorAll('button').forEach(b=>b.onclick=()=>{
+    go(b.dataset.nav);
+    fecharSidebar();
+  });
+  const sc = $('#sb-company'); if(sc) sc.textContent = (State.config.nomeFantasia||'CASA DA ELÉTRICA');
+}
+function abrirSidebar(){
+  sidebarAberto = true;
+  $('#sidebar').classList.add('open');
+  $('#sbOverlay').classList.add('show');
+}
+function fecharSidebar(){
+  sidebarAberto = false;
+  $('#sidebar').classList.remove('open');
+  $('#sbOverlay').classList.remove('show');
+}
+function go(tela,param){
+  telaAtual = tela;
+  renderNav();
+  const el = $('#app');
+  el.innerHTML = '';
+  switch(tela){
+    case 'home': renderHome(el); break;
+    case 'novoOrc': renderOrcamento(el,param); break;
+    case 'produtos': renderProdutos(el); break;
+    case 'clientes': renderClientes(el); break;
+    case 'historico': renderHistorico(el); break;
+    case 'parceiros': renderParceiros(el); break;
+    case 'contas': renderContas(el); break;
+    case 'recebimentos': renderRecebimentos(el); break;
+    case 'relatorios': renderRelatorios(el); break;
+    case 'backup': renderBackup(el); break;
+    case 'config': renderConfig(el); break;
+  }
+  window.scrollTo(0,0);
+}
+
+function openModal(titulo,bodyHTML,footHTML,opts={}){
+  const root = $('#modal-root');
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-bg';
+  wrap.innerHTML = `<div class="modal" style="${opts.maxWidth?'max-width:'+opts.maxWidth:''}">
+    <div class="modal-head"><h3>${esc(titulo)}</h3><button class="close">✕</button></div>
+    <div class="modal-body">${bodyHTML}</div>
+    ${footHTML?`<div class="modal-foot">${footHTML}</div>`:''}
+  </div>`;
+  root.appendChild(wrap);
+  const close = ()=>{wrap.remove(); opts.onClose && opts.onClose();};
+  wrap.querySelector('.close').onclick = close;
+  wrap.addEventListener('click',e=>{if(e.target===wrap)close()});
+  return {el:wrap,close};
+}
+
+// ============================================================
+// PAINEL
+// ============================================================
+function renderHome(el){
+  const cfg = State.config;
+  const orcs = State.orcamentos;
+  const mes = todayISO().slice(0,7);
+  const orcsMes = orcs.filter(o=>(o.dataEmissao||'').slice(0,7)===mes);
+  const totalOrcado = orcsMes.reduce((s,o)=>s+(o.total||0),0);
+  const aprovados = orcs.filter(o=>o.situacao==='aprovado').length;
+  const abertos = orcs.filter(o=>o.situacao==='em_aberto').length;
+  const pessoasComDebito = new Set(State.dividas.filter(d=>!d.estornada&&d.saldo>0).map(d=>d.pessoaId)).size;
+  const dividasAbertas = State.dividas.filter(d=>!d.estornada&&d.saldo>0).length;
+
+  el.innerHTML = `
+    <div class="card blue">
+      <div style="font-size:12px;opacity:.85;letter-spacing:1px;font-weight:600">BEM-VINDO AO</div>
+      <h1 style="color:#fff;margin:2px 0 4px;font-size:24px">WBS SYSTEM</h1>
+      <div style="font-size:13px;opacity:.9">${esc(cfg.nomeFantasia||'CASA DA ELÉTRICA')}</div>
+    </div>
+    <h2>📝 Orçamentos</h2>
+    <div class="grid c2">
+      <div class="kpi"><div class="lbl">Total de orçamentos</div><div class="val">${orcs.length}</div></div>
+      <div class="kpi"><div class="lbl">Total orçado (mês)</div><div class="val">${fmtMoney(totalOrcado)}</div></div>
+      <div class="kpi success"><div class="lbl">Aprovados</div><div class="val">${aprovados}</div></div>
+      <div class="kpi warn"><div class="lbl">Em aberto</div><div class="val">${abertos}</div></div>
+    </div>
+    <h2>💳 Fiado / A Receber</h2>
+    <div class="grid c2">
+      <div class="kpi"><div class="lbl">Total a receber</div><div class="val">${fmtMoney(totalReceber())}</div></div>
+      <div class="kpi danger"><div class="lbl">Vencido</div><div class="val">${fmtMoney(totalVencido())}</div></div>
+      <div class="kpi success"><div class="lbl">Em dia</div><div class="val">${fmtMoney(totalEmDia())}</div></div>
+      <div class="kpi"><div class="lbl">Recebido (mês)</div><div class="val">${fmtMoney(totalRecebidoMes())}</div></div>
+      <div class="kpi"><div class="lbl">Pessoas com débito</div><div class="val">${pessoasComDebito}</div></div>
+      <div class="kpi warn"><div class="lbl">Dívidas abertas</div><div class="val">${dividasAbertas}</div></div>
+    </div>
+    <h2>⚡ Atalhos</h2>
+    <div class="grid c2">
+      <button class="btn block" onclick="go('novoOrc')">➕ Novo Orçamento</button>
+      <button class="btn yellow block" onclick="novaRetiradaAvulsa()">➕ Nova Retirada</button>
+      <button class="btn success block" onclick="go('recebimentos')">💰 Novo Recebimento</button>
+      <button class="btn outline block" onclick="novoProduto()">📦 Cadastrar Produto</button>
+      <button class="btn outline block" onclick="novoCliente()">👤 Cadastrar Cliente</button>
+      <button class="btn ghost block" onclick="go('relatorios')">📊 Relatórios</button>
+    </div>
+  `;
+}
+
+// ============================================================
+// PRODUTOS
+// ============================================================
+function renderProdutos(el){
+  const cats = State.categorias;
+  el.innerHTML = `
+    <h1>📦 Produtos</h1>
+    <div class="row tight">
+      <button class="btn" onclick="novoProduto()">➕ Novo Produto</button>
+      <button class="btn outline" onclick="novaCategoria()">🏷️ Categoria</button>
+    </div>
+    <div class="search-bar" style="margin-top:10px"><span class="ic">🔍</span>
+      <input id="buscaProd" placeholder="Buscar produto...">
+    </div>
+    <div class="row tight">
+      <select id="filtroCat"><option value="">Todas as categorias</option>
+        ${cats.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
+      </select>
+      <select id="ordemProd">
+        <option value="nome">Nome A-Z</option>
+        <option value="nomeZ">Nome Z-A</option>
+        <option value="preco">Maior preço</option>
+        <option value="precoAsc">Menor preço</option>
+      </select>
+    </div>
+    <div id="prodLista" style="margin-top:10px"></div>
+  `;
+  const renderLista = ()=>{
+    const q = ($('#buscaProd').value||'').toLowerCase();
+    const cat = $('#filtroCat').value;
+    const ord = $('#ordemProd').value;
+    let lista = State.produtos.slice();
+    if(q) lista = lista.filter(p=>(p.nome||'').toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q));
+    if(cat) lista = lista.filter(p=>p.categoriaId===cat);
+    if(ord==='nome') lista.sort((a,b)=>a.nome.localeCompare(b.nome));
+    if(ord==='nomeZ') lista.sort((a,b)=>b.nome.localeCompare(a.nome));
+    if(ord==='preco') lista.sort((a,b)=>b.preco-a.preco);
+    if(ord==='precoAsc') lista.sort((a,b)=>a.preco-b.preco);
+    const cont = $('#prodLista');
+    if(!lista.length){cont.innerHTML = `<div class="empty"><div class="big">📦</div>Nenhum produto encontrado.</div>`;return;}
+    cont.innerHTML = lista.map(p=>{
+      const catNome = (State.categorias.find(c=>c.id===p.categoriaId)||{}).nome||'';
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--blue)">${esc(p.nome)}</div>
+            <div class="mini">${p.codigo?'Cód: '+esc(p.codigo)+' · ':''}${catNome?esc(catNome)+' · ':''}${esc(p.unidade||'UN')}</div>
+          </div>
+          <div style="text-align:right;font-weight:800;color:var(--blue);white-space:nowrap">${fmtMoney(p.preco)}</div>
+        </div>
+        <div class="actions">
+          <button class="btn sm outline" onclick="editarProduto('${p.id}')">✏️ Editar</button>
+          <button class="btn sm danger" onclick="excluirProduto('${p.id}')">🗑️ Excluir</button>
+        </div>
+      </div>`;
+    }).join('');
+  };
+  $('#buscaProd').oninput = renderLista;
+  $('#filtroCat').onchange = renderLista;
+  $('#ordemProd').onchange = renderLista;
+  renderLista();
+}
+
+function novoProduto(){
+  const cats = State.categorias;
+  const body = `
+    <div class="field"><label>Nome do produto *</label><input id="pNome"></div>
+    <div class="row">
+      <div class="field"><label>Código/Referência</label><input id="pCodigo"></div>
+      <div class="field"><label>Unidade</label>
+        <select id="pUnid">
+          <option>UN</option><option>M</option><option>KG</option><option>PC</option>
+          <option>RL</option><option>CX</option><option>L</option><option>PAR</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Categoria</label>
+        <select id="pCat"><option value="">—</option>
+          ${cats.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Preço de venda *</label><input id="pPreco" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+  `;
+  const m = openModal('Novo Produto',body,
+    `<button class="btn ghost" id="cancP">Cancelar</button><button class="btn" id="salvarP">Salvar</button>`);
+  m.el.querySelector('#salvarP').onclick = async ()=>{
+    const nome = $('#pNome').value.trim();
+    if(!nome){toast('Informe o nome','error');return;}
+    const prod = {
+      id:uid(), nome, codigo:$('#pCodigo').value.trim(),
+      unidade:$('#pUnid').value, categoriaId:$('#pCat').value,
+      preco:parseMoney($('#pPreco').value), criadoEm:nowISO()
+    };
+    State.produtos.push(prod);
+    await dbPut('produtos',prod);
+    m.close();toast('Produto cadastrado','success');
+    if(telaAtual==='produtos') renderProdutos($('#app'));
+  };
+  m.el.querySelector('#cancP').onclick = m.close;
+}
+
+function editarProduto(id){
+  const p = State.produtos.find(x=>x.id===id);
+  if(!p) return;
+  const cats = State.categorias;
+  const body = `
+    <div class="field"><label>Nome</label><input id="pNome" value="${esc(p.nome)}"></div>
+    <div class="row">
+      <div class="field"><label>Código</label><input id="pCodigo" value="${esc(p.codigo||'')}"></div>
+      <div class="field"><label>Unidade</label>
+        <select id="pUnid">
+          ${['UN','M','KG','PC','RL','CX','L','PAR'].map(u=>`<option ${p.unidade===u?'selected':''}>${u}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Categoria</label>
+        <select id="pCat"><option value="">—</option>
+          ${cats.map(c=>`<option value="${c.id}" ${p.categoriaId===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Preço</label><input id="pPreco" inputmode="decimal" value="${(p.preco/100).toFixed(2).replace('.',',')}"></div>
+    </div>
+    <div class="info-box">Alterações futuras não modificam preços já registrados em orçamentos e dívidas.</div>
+  `;
+  const m = openModal('Editar Produto',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn" id="salvar">Salvar</button>`);
+  m.el.querySelector('#salvar').onclick = async ()=>{
+    const antes = {...p};
+    p.nome = $('#pNome').value.trim();
+    p.codigo = $('#pCodigo').value.trim();
+    p.unidade = $('#pUnid').value;
+    p.categoriaId = $('#pCat').value;
+    p.preco = parseMoney($('#pPreco').value);
+    await dbPut('produtos',p);
+    await logHist('produto_edicao',p.id,antes,{...p});
+    m.close();toast('Produto atualizado','success');renderProdutos($('#app'));
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+
+async function excluirProduto(id){
+  const ok = await confirmar('Excluir este produto do catálogo? Orçamentos e dívidas antigas não serão afetados.','Excluir Produto');
+  if(!ok) return;
+  State.produtos = State.produtos.filter(p=>p.id!==id);
+  await dbDelete('produtos',id);
+  toast('Produto excluído','success');renderProdutos($('#app'));
+}
+
+function novaCategoria(){
+  const body = `<div class="field"><label>Nome da categoria</label><input id="catNome"></div>`;
+  const m = openModal('Nova Categoria',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn" id="ok">Salvar</button>`);
+  m.el.querySelector('#ok').onclick = async ()=>{
+    const nome = $('#catNome').value.trim();
+    if(!nome){toast('Informe o nome','error');return;}
+    const cat = {id:uid(),nome};
+    State.categorias.push(cat);
+    await dbPut('categorias',cat);
+    m.close();toast('Categoria criada','success');renderProdutos($('#app'));
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+
+// ============================================================
+// CLIENTES
+// ============================================================
+function renderClientes(el){
+  el.innerHTML = `
+    <h1>👥 Clientes</h1>
+    <button class="btn block" onclick="novoCliente()">➕ Novo Cliente</button>
+    <div class="search-bar" style="margin-top:10px"><span class="ic">🔍</span>
+      <input id="buscaCli" placeholder="Buscar cliente...">
+    </div>
+    <div id="cliLista"></div>
+  `;
+  const renderLista = ()=>{
+    const q = ($('#buscaCli').value||'').toLowerCase();
+    let lista = State.clientes.slice();
+    if(q) lista = lista.filter(c=>(c.nome||'').toLowerCase().includes(q) || (c.telefone||'').includes(q));
+    lista.sort((a,b)=>a.nome.localeCompare(b.nome));
+    const cont = $('#cliLista');
+    if(!lista.length){cont.innerHTML = `<div class="empty"><div class="big">👥</div>Nenhum cliente.</div>`;return;}
+    cont.innerHTML = lista.map(c=>{
+      const classes = State.classificacoes.filter(x=>x.pessoaId===c.id).map(x=>x.tipo);
+      const saldo = saldoPessoa(c.id);
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--blue)">${esc(c.nome)}</div>
+            <div class="mini">${c.telefone?'📞 '+esc(c.telefone):''} ${c.whatsapp?'· 📱 '+esc(c.whatsapp):''}</div>
+            ${classes.length?`<div class="chips">${classes.map(cl=>`<span class="chip">${esc(cl)}</span>`).join('')}</div>`:''}
+          </div>
+          <div style="text-align:right">
+            ${saldo>0?`<div style="font-weight:800;color:var(--danger)">${fmtMoney(saldo)}</div><div class="mini">devendo</div>`:`<div style="color:var(--success);font-weight:700;font-size:12px">✓ Sem débito</div>`}
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn sm outline" onclick="editarCliente('${c.id}')">✏️ Editar</button>
+          <button class="btn sm ghost" onclick="verContaPessoa('${c.id}')">💳 Conta</button>
+          ${c.id!=='consumidor_final'?`<button class="btn sm danger" onclick="excluirCliente('${c.id}')">🗑️</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+  };
+  $('#buscaCli').oninput = renderLista;
+  renderLista();
+}
+
+async function novoCliente(){
+  const body = `
+    <div class="field"><label>Nome *</label><input id="cNome"></div>
+    <div class="row">
+      <div class="field"><label>Telefone</label><input id="cTel"></div>
+      <div class="field"><label>WhatsApp</label><input id="cZap"></div>
+    </div>
+    <div class="field"><label>CPF/CNPJ</label><input id="cDoc"></div>
+    <div class="field"><label>Endereço</label><input id="cEnd"></div>
+    <div class="field"><label>Observações</label><textarea id="cObs" rows="2"></textarea></div>
+    <div class="field"><label>Classificações</label>
+      <div class="chips" id="cClasses">
+        ${['Eletricista','Parceiro','Cliente fiado','Outro'].map(cl=>`<span class="chip" data-cl="${cl}">${cl}</span>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>Limite de crédito (opcional)</label><input id="cLimite" inputmode="decimal" placeholder="0,00 (vazio = sem limite)"></div>
+  `;
+  const m = openModal('Novo Cliente',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn" id="salvar">Salvar</button>`);
+  const sel = new Set();
+  m.el.querySelectorAll('#cClasses .chip').forEach(ch=>{
+    ch.onclick=()=>{ch.classList.toggle('sel'); if(ch.classList.contains('sel'))sel.add(ch.dataset.cl); else sel.delete(ch.dataset.cl);};
+  });
+  m.el.querySelector('#salvar').onclick = async ()=>{
+    const nome = $('#cNome').value.trim();
+    if(!nome){toast('Informe o nome','error');return;}
+    const cli = {id:uid(),nome,telefone:$('#cTel').value.trim(),whatsapp:$('#cZap').value.trim(),
+      doc:$('#cDoc').value.trim(),endereco:$('#cEnd').value.trim(),obs:$('#cObs').value.trim(),
+      limite:parseMoney($('#cLimite').value),criadoEm:nowISO()};
+    State.clientes.push(cli);
+    await dbPut('clientes',cli);
+    for(const cl of sel){
+      const reg = {id:uid(),pessoaId:cli.id,tipo:cl};
+      State.classificacoes.push(reg); await dbPut('classificacoes',reg);
+    }
+    m.close();toast('Cliente cadastrado','success');
+    if(telaAtual==='clientes') renderClientes($('#app'));
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+
+function editarCliente(id){
+  const c = State.clientes.find(x=>x.id===id);
+  if(!c) return;
+  const classesAtuais = State.classificacoes.filter(x=>x.pessoaId===id).map(x=>x.tipo);
+  const body = `
+    <div class="field"><label>Nome</label><input id="cNome" value="${esc(c.nome)}"></div>
+    <div class="row">
+      <div class="field"><label>Telefone</label><input id="cTel" value="${esc(c.telefone||'')}"></div>
+      <div class="field"><label>WhatsApp</label><input id="cZap" value="${esc(c.whatsapp||'')}"></div>
+    </div>
+    <div class="field"><label>CPF/CNPJ</label><input id="cDoc" value="${esc(c.doc||'')}"></div>
+    <div class="field"><label>Endereço</label><input id="cEnd" value="${esc(c.endereco||'')}"></div>
+    <div class="field"><label>Observações</label><textarea id="cObs" rows="2">${esc(c.obs||'')}</textarea></div>
+    <div class="field"><label>Classificações</label>
+      <div class="chips" id="cClasses">
+        ${['Eletricista','Parceiro','Cliente fiado','Outro'].map(cl=>`<span class="chip ${classesAtuais.includes(cl)?'sel':''}" data-cl="${cl}">${cl}</span>`).join('')}
+      </div>
+    </div>
+    <div class="field"><label>Limite de crédito</label><input id="cLimite" inputmode="decimal" value="${c.limite?(c.limite/100).toFixed(2).replace('.',','):''}" placeholder="vazio = sem limite"></div>
+  `;
+  const m = openModal('Editar Cliente',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn" id="salvar">Salvar</button>`);
+  const sel = new Set(classesAtuais);
+  m.el.querySelectorAll('#cClasses .chip').forEach(ch=>{
+    ch.onclick=()=>{ch.classList.toggle('sel'); if(ch.classList.contains('sel'))sel.add(ch.dataset.cl); else sel.delete(ch.dataset.cl);};
+  });
+  m.el.querySelector('#salvar').onclick = async ()=>{
+    const antes = {...c};
+    c.nome = $('#cNome').value.trim();
+    c.telefone = $('#cTel').value.trim();
+    c.whatsapp = $('#cZap').value.trim();
+    c.doc = $('#cDoc').value.trim();
+    c.endereco = $('#cEnd').value.trim();
+    c.obs = $('#cObs').value.trim();
+    c.limite = parseMoney($('#cLimite').value);
+    await dbPut('clientes',c);
+    // limpar classificações
+    const todas = await dbGetAll('classificacoes');
+    for(const x of todas.filter(x=>x.pessoaId===id)) await dbDelete('classificacoes',x.id);
+    State.classificacoes = todas.filter(x=>x.pessoaId!==id);
+    for(const cl of sel){
+      const reg = {id:uid(),pessoaId:id,tipo:cl};
+      State.classificacoes.push(reg); await dbPut('classificacoes',reg);
+    }
+    await logHist('cliente_edicao',id,antes,{...c});
+    m.close();toast('Cliente atualizado','success');renderClientes($('#app'));
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+
+async function excluirCliente(id){
+  if(id==='consumidor_final'){toast('Cliente padrão não pode ser excluído','error');return;}
+  const tem = State.dividas.some(d=>d.pessoaId===id&&!d.estornada&&d.saldo>0);
+  if(tem){toast('Cliente possui dívidas em aberto','error');return;}
+  const ok = await confirmar('Excluir este cliente?','Excluir Cliente');
+  if(!ok) return;
+  State.clientes = State.clientes.filter(c=>c.id!==id);
+  await dbDelete('clientes',id);
+  toast('Cliente excluído','success');renderClientes($('#app'));
+}
+
+// ============================================================
+// ORÇAMENTO
+// ============================================================
+let orcEditando = null;
+
+function renderOrcamento(el, orcId){
+  if(orcId){
+    orcEditando = JSON.parse(JSON.stringify(State.orcamentos.find(o=>o.id===orcId)));
+  } else {
+    orcEditando = novoOrcamentoObj();
+  }
+  if(!orcEditando){toast('Orçamento não encontrado','error');go('historico');return;}
+  renderOrcForm(el);
+}
+
+function novoOrcamentoObj(){
+  return {
+    id:uid(),numero:null,clienteId:'consumidor_final',dataEmissao:todayISO(),
+    validadeDias:parseInt(State.config.validadePadrao)||7,condicaoPagamento:'',
+    modelo:State.config.modeloPadrao||'moderno',itens:[],
+    descontoTipo:'valor',descontoValor:0,frete:0,observacoes:'',
+    rodape:State.config.rodapePadrao||'',situacao:'em_aberto',criadoEm:nowISO(),vincDívida:null
+  };
+}
+
+function calcTotaisOrc(o){
+  const sub = o.itens.reduce((s,i)=>s+i.qtd*i.preco,0);
+  let desc = 0;
+  if(o.descontoTipo==='percent') desc = Math.round(sub * (o.descontoValor/100));
+  else desc = o.descontoValor||0;
+  const total = Math.max(0, sub - desc + (o.frete||0));
+  return {sub,desc,total};
+}
+
+function renderOrcForm(el){
+  const o = orcEditando;
+  const tot = calcTotaisOrc(o);
+  const clientes = State.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+  const vinc = o.vincDívida ? State.dividas.find(d=>d.id===o.vincDívida) : null;
+
+  el.innerHTML = `
+    <h1>📝 ${o.numero?'Editar Orçamento Nº '+o.numero:'Novo Orçamento'}</h1>
+    <div class="card">
+      <div class="row">
+        <div class="field"><label>Nº</label><input value="${o.numero?'#'+o.numero:'(automático)'}" disabled></div>
+        <div class="field"><label>Emissão</label><input type="date" id="oData" value="${o.dataEmissao}"></div>
+      </div>
+      <div class="field"><label>Cliente</label>
+        <select id="oCliente">${clientes.map(c=>`<option value="${c.id}" ${o.clienteId===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+      </div>
+      <div class="row">
+        <div class="field"><label>Validade (dias)</label><input type="number" id="oValidade" value="${o.validadeDias}" min="0"></div>
+        <div class="field"><label>Condição</label><input id="oCond" value="${esc(o.condicaoPagamento||'')}" placeholder="Ex: 30 dias"></div>
+      </div>
+      <div class="field"><label>Modelo</label>
+        <select id="oModelo">
+          <option value="moderno" ${o.modelo==='moderno'?'selected':''}>Moderno (azul/amarelo)</option>
+          <option value="tradicional" ${o.modelo==='tradicional'?'selected':''}>Tradicional (bloco branco)</option>
+        </select>
+      </div>
+    </div>
+    <h2>📦 Produtos</h2>
+    <button class="btn block" onclick="adicionarItemOrc()">➕ Adicionar Produto</button>
+    <div id="itensOrc" style="margin-top:8px">${renderItensOrc()}</div>
+    <h2>💵 Totais</h2>
+    <div class="card">
+      <div class="field"><label>Desconto</label>
+        <div class="row">
+          <select id="oDescTipo" style="max-width:120px"><option value="valor" ${o.descontoTipo==='valor'?'selected':''}>R$</option><option value="percent" ${o.descontoTipo==='percent'?'selected':''}>%</option></select>
+          <input id="oDescValor" inputmode="decimal" value="${o.descontoTipo==='percent'?o.descontoValor:(o.descontoValor/100).toFixed(2).replace('.',',')}">
+        </div>
+      </div>
+      <div class="field"><label>Frete</label><input id="oFrete" inputmode="decimal" value="${(o.frete/100).toFixed(2).replace('.',',')}"></div>
+      <div class="list-item"><span>Subtotal</span><span class="r">${fmtMoney(tot.sub)}</span></div>
+      <div class="list-item"><span>Desconto</span><span class="r">- ${fmtMoney(tot.desc)}</span></div>
+      <div class="list-item"><span>Frete</span><span class="r">+ ${fmtMoney(o.frete||0)}</span></div>
+      <div class="big-total">Total: ${fmtMoney(tot.total)}</div>
+    </div>
+    <h2>📄 Observações</h2>
+    <div class="field"><label>Observações gerais</label><textarea id="oObs" rows="2">${esc(o.observacoes||'')}</textarea></div>
+    <div class="field"><label>Rodapé</label><input id="oRodape" value="${esc(o.rodape||'')}"></div>
+    ${vinc?`<div class="info-box">🔗 <b>Este orçamento já foi lançado na conta de ${esc((State.clientes.find(c=>c.id===vinc.pessoaId)||{}).nome||'?')}.</b> Alterações ajustarão a dívida existente preservando pagamentos.</div>`:''}
+    <div class="actions" style="margin-top:16px">
+      <button class="btn outline" onclick="cancelarOrc()">↩ Cancelar</button>
+      <button class="btn yellow" onclick="salvarOrc(false)">💾 Salvar</button>
+      <button class="btn" onclick="salvarOrc(true)">👁 Salvar e Ver</button>
+    </div>
+    <div class="actions">
+      <button class="btn success" onclick="adicionarContaParceiro()">🤝 Adicionar à conta de um parceiro</button>
+    </div>
+  `;
+  $('#oData').onchange = ()=>o.dataEmissao=$('#oData').value;
+  $('#oCliente').onchange = ()=>o.clienteId=$('#oCliente').value;
+  $('#oValidade').onchange = ()=>o.validadeDias=parseInt($('#oValidade').value)||0;
+  $('#oCond').oninput = ()=>o.condicaoPagamento=$('#oCond').value;
+  $('#oModelo').onchange = ()=>o.modelo=$('#oModelo').value;
+  $('#oObs').oninput = ()=>o.observacoes=$('#oObs').value;
+  $('#oRodape').oninput = ()=>o.rodape=$('#oRodape').value;
+  $('#oDescTipo').onchange = ()=>{o.descontoTipo=$('#oDescTipo').value;renderOrcForm(el)};
+  $('#oDescValor').oninput = ()=>{o.descontoValor=parseMoney($('#oDescValor').value);renderOrcForm(el)};
+  $('#oFrete').oninput = ()=>{o.frete=parseMoney($('#oFrete').value);renderOrcForm(el)};
+}
+
+function renderItensOrc(){
+  const o = orcEditando;
+  if(!o.itens.length) return `<div class="empty"><div class="big">📦</div>Nenhum item.</div>`;
+  return o.itens.map((it,i)=>`
+    <div class="prod-line">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:13px">${i+1}. ${esc(it.descricao)}</div>
+          ${it.observacao?`<div class="obs">${esc(it.observacao)}</div>`:''}
+          <div class="mini" style="margin-top:4px">${it.qtd} ${esc(it.unidade||'')} × ${fmtMoney(it.preco)} = <b>${fmtMoney(it.qtd*it.preco)}</b></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <button class="btn sm ghost" onclick="editarItemOrc(${i})">✏️</button>
+          <button class="btn sm danger" onclick="removerItemOrc(${i})">🗑️</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function adicionarItemOrc(){
+  const body = `
+    <div class="row tight" style="margin-bottom:8px">
+      <button class="btn sm outline fixed" id="btnNovoProdOrc">➕ Novo Produto</button>
+    </div>
+    <div class="search-bar"><span class="ic">🔍</span><input id="buscaProdOrc" placeholder="Buscar produto..."></div>
+    <div id="prodSelList" style="max-height:300px;overflow-y:auto"></div>
+    <div id="formItem" class="hidden" style="margin-top:12px;border-top:2px solid var(--blue);padding-top:12px">
+      <div style="font-weight:700;color:var(--blue);margin-bottom:8px" id="prodSelNome"></div>
+      <div class="row">
+        <div class="field"><label>Quantidade *</label><input id="itQtd" inputmode="decimal" value="1"></div>
+        <div class="field"><label>Preço unitário</label><input id="itPreco" inputmode="decimal"></div>
+      </div>
+      <div class="field"><label>Observação (opcional)</label><input id="itObs" placeholder="Ex: 50m azul e 50m vermelho"></div>
+    </div>
+  `;
+  const m = openModal('Adicionar Produto',body,
+    `<button class="btn ghost" id="cancIt">Cancelar</button><button class="btn hidden" id="addIt">Adicionar</button>`);
+  let sel = null;
+  const listar = ()=>{
+    const prods = State.produtos.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+    const q = (m.el.querySelector('#buscaProdOrc').value||'').toLowerCase();
+    const lst = prods.filter(p=>!q || p.nome.toLowerCase().includes(q) || (p.codigo||'').toLowerCase().includes(q));
+    const cont = m.el.querySelector('#prodSelList');
+    if(!lst.length){cont.innerHTML='<div class="empty">Nenhum produto. Use "➕ Novo Produto".</div>';return;}
+    cont.innerHTML = lst.map(p=>`
+      <div class="person-card" data-pid="${p.id}">
+        <div style="display:flex;justify-content:space-between">
+          <div><div class="name" style="font-size:14px">${esc(p.nome)}</div><div class="meta">${esc(p.codigo||'')} ${p.unidade?'· '+esc(p.unidade):''}</div></div>
+          <div style="font-weight:800;color:var(--blue)">${fmtMoney(p.preco)}</div>
+        </div>
+      </div>`).join('');
+    cont.querySelectorAll('.person-card').forEach(c=>{
+      c.onclick=()=>{
+        sel = State.produtos.find(p=>p.id===c.dataset.pid);
+        m.el.querySelector('#formItem').classList.remove('hidden');
+        m.el.querySelector('#addIt').classList.remove('hidden');
+        m.el.querySelector('#prodSelNome').textContent = sel.nome;
+        m.el.querySelector('#itPreco').value = (sel.preco/100).toFixed(2).replace('.',',');
+        m.el.querySelector('#buscaProdOrc').parentElement.style.display='none';
+        m.el.querySelector('#prodSelList').innerHTML='';
+      };
+    });
+  };
+  m.el.querySelector('#buscaProdOrc').oninput = listar;
+  m.el.querySelector('#btnNovoProdOrc').onclick = ()=>{
+    novoProdutoInline((novoProd)=>{
+      sel = novoProd;
+      m.el.querySelector('#formItem').classList.remove('hidden');
+      m.el.querySelector('#addIt').classList.remove('hidden');
+      m.el.querySelector('#prodSelNome').textContent = novoProd.nome;
+      m.el.querySelector('#itPreco').value = (novoProd.preco/100).toFixed(2).replace('.',',');
+      m.el.querySelector('#buscaProdOrc').parentElement.style.display='none';
+      m.el.querySelector('#prodSelList').innerHTML='';
+      listar();
+    });
+  };
+  listar();
+  m.el.querySelector('#addIt').onclick = ()=>{
+    if(!sel) return;
+    const qtd = parseFloat(String(m.el.querySelector('#itQtd').value).replace(',','.'))||1;
+    const preco = parseMoney(m.el.querySelector('#itPreco').value);
+    const obs = m.el.querySelector('#itObs').value.trim();
+    const existente = orcEditando.itens.find(x=>x.produtoId===sel.id);
+    if(existente){
+      existente.qtd = parseFloat((existente.qtd+qtd).toFixed(3));
+      if(obs && existente.observacao && !existente.observacao.includes(obs)){
+        existente.observacao = existente.observacao + ' | ' + obs;
+      } else if(obs && !existente.observacao){
+        existente.observacao = obs;
+      }
+    } else {
+      orcEditando.itens.push({
+        produtoId:sel.id, descricao:sel.nome, unidade:sel.unidade,
+        qtd, preco, observacao:obs, indice:orcEditando.itens.length
+      });
+    }
+    reindex();
+    m.close();
+    renderOrcForm($('#app'));
+  };
+  m.el.querySelector('#cancIt').onclick = m.close;
+}
+
+// Cadastro inline de produto (usado no orçamento e na retirada)
+function novoProdutoInline(onSaved){
+  const cats = State.categorias;
+  const body = `
+    <div class="field"><label>Nome do produto *</label><input id="npNome"></div>
+    <div class="row">
+      <div class="field"><label>Código/Referência</label><input id="npCodigo"></div>
+      <div class="field"><label>Unidade</label>
+        <select id="npUnid">
+          <option>UN</option><option>M</option><option>KG</option><option>PC</option>
+          <option>RL</option><option>CX</option><option>L</option><option>PAR</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field"><label>Categoria</label>
+        <select id="npCat"><option value="">—</option>
+          ${cats.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Preço de venda *</label><input id="npPreco" inputmode="decimal" placeholder="0,00"></div>
+    </div>
+  `;
+  const mm = openModal('Novo Produto',body,
+    `<button class="btn ghost" id="cancNP">Cancelar</button><button class="btn" id="salvarNP">Salvar Produto</button>`);
+  mm.el.querySelector('#salvarNP').onclick = async ()=>{
+    const nome = mm.el.querySelector('#npNome').value.trim();
+    if(!nome){toast('Informe o nome','error');return;}
+    const prod = {
+      id:uid(), nome, codigo:mm.el.querySelector('#npCodigo').value.trim(),
+      unidade:mm.el.querySelector('#npUnid').value, categoriaId:mm.el.querySelector('#npCat').value,
+      preco:parseMoney(mm.el.querySelector('#npPreco').value), criadoEm:nowISO()
+    };
+    State.produtos.push(prod);
+    await dbPut('produtos',prod);
+    mm.close();
+    toast('Produto cadastrado','success');
+    if(onSaved) onSaved(prod);
+  };
+  mm.el.querySelector('#cancNP').onclick = mm.close;
+}
+
+function editarItemOrc(i){
+  const it = orcEditando.itens[i];
+  const body = `
+    <div class="field"><label>Descrição</label><input id="eDesc" value="${esc(it.descricao)}"></div>
+    <div class="row">
+      <div class="field"><label>Quantidade</label><input id="eQtd" inputmode="decimal" value="${it.qtd}"></div>
+      <div class="field"><label>Preço unitário</label><input id="ePreco" inputmode="decimal" value="${(it.preco/100).toFixed(2).replace('.',',')}"></div>
+    </div>
+    <div class="field"><label>Observação</label><input id="eObs" value="${esc(it.observacao||'')}"></div>
+    <div class="info-box">Editar o preço aqui não altera o cadastro do produto.</div>
+  `;
+  const m = openModal('Editar Item',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn" id="ok">Salvar</button>`);
+  m.el.querySelector('#ok').onclick = ()=>{
+    it.descricao = m.el.querySelector('#eDesc').value.trim();
+    it.qtd = parseFloat(String(m.el.querySelector('#eQtd').value).replace(',','.'))||1;
+    it.preco = parseMoney(m.el.querySelector('#ePreco').value);
+    it.observacao = m.el.querySelector('#eObs').value.trim();
+    m.close();renderOrcForm($('#app'));
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+
+function removerItemOrc(i){
+  orcEditando.itens.splice(i,1);
+  reindex();
+  renderOrcForm($('#app'));
+}
+function reindex(){orcEditando.itens.forEach((it,i)=>it.indice=i);}
+
+async function salvarOrc(verDepois){
+  const o = orcEditando;
+  if(!o.itens.length){toast('Adicione pelo menos um item','error');return;}
+  const tot = calcTotaisOrc(o);
+  const ehNovo = !o.numero;
+  if(ehNovo){
+    const c = await dbGet('contador','orcamentos');
+    const n = c ? (c.valor||0)+1 : 1;
+    o.numero = n;
+    await dbPut('contador',{nome:'orcamentos',valor:n});
+  }
+  o.subtotal = tot.sub;
+  o.total = tot.total;
+  o.descontoCalc = tot.desc;
+  o.dataVencimento = o.validadeDias ? addDays(o.dataEmissao,o.validadeDias) : '';
+  const antes = State.orcamentos.find(x=>x.id===o.id);
+  if(o.vincDívida){
+    await ajustarDividaVinculada(o,antes);
+  }
+  const idx = State.orcamentos.findIndex(x=>x.id===o.id);
+  if(idx>=0) State.orcamentos[idx] = o; else State.orcamentos.push(o);
+  await dbPut('orcamentos',o);
+  if(!antes) await logHist('orcamento_criado',o.id,null,{numero:o.numero,total:o.total});
+  else await logHist('orcamento_editado',o.id,{total:antes.total},{total:o.total});
+  toast('Orçamento salvo','success');
+  if(verDepois){ verOrcamento(o.id); }
+  else { go('historico'); }
+}
+
+async function ajustarDividaVinculada(orc, antesOrc){
+  const d = State.dividas.find(x=>x.id===orc.vincDívida);
+  if(!d) return;
+  const tot = calcTotaisOrc(orc);
+  const pagos = State.distrib.filter(x=>x.dividaId===d.id).reduce((s,x)=>s+x.valor,0);
+  const est = State.estornos.filter(e=>e.dividaId===d.id && e.status==='confirmado').reduce((s,e)=>s+(e.valorAbatido||0),0);
+  const novoTotal = tot.total;
+  if(novoTotal < pagos + est){
+    toast('Valor do orçamento menor que o já pago. Não é possível ajustar automaticamente.','error');
+    return;
+  }
+  const antes = {valorTotal:d.valorTotal,itens:JSON.parse(JSON.stringify(d.itens||[]))};
+  d.valorTotal = novoTotal;
+  d.itens = orc.itens.map(i=>({descricao:i.descricao,qtd:i.qtd,preco:i.preco,unidade:i.unidade,observacao:i.observacao}));
+  d.saldo = calcularSaldo(d);
+  await dbPut('dividas',d);
+  await logHist('divida_ajustada',d.id,antes,{valorTotal:novoTotal,itens:d.itens},'Ajuste por edição de orçamento Nº '+orc.numero);
+}
+
+function cancelarOrc(){
+  if(confirm('Descartar alterações não salvas?')) { orcEditando=null; go('historico'); }
+}
+
+function adicionarContaParceiro(){
+  const o = orcEditando;
+  if(!o.itens.length){toast('Adicione itens primeiro','error');return;}
+  if(o.vincDívida){
+    const d = State.dividas.find(x=>x.id===o.vincDívida);
+    const p = State.clientes.find(c=>c.id===d.pessoaId);
+    toast('Este orçamento já foi lançado na conta de '+(p?p.nome:'?'),'error');
+    return;
+  }
+  const tot = calcTotaisOrc(o);
+  const clientes = State.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+  const clienteOrig = State.clientes.find(c=>c.id===o.clienteId)||{nome:'—'};
+  const body = `
+    <div class="card blue">
+      <div style="font-size:12px;opacity:.8">ORÇAMENTO Nº</div>
+      <div style="font-size:20px;font-weight:800">${o.numero?'#'+o.numero:'(novo)'}</div>
+      <div style="font-size:13px;margin-top:4px">Cliente original: <b>${esc(clienteOrig.nome)}</b></div>
+      <div style="font-size:20px;font-weight:800;margin-top:8px">Total: ${fmtMoney(tot.total)}</div>
+    </div>
+    <div class="info-box">O orçamento continuará vinculado ao cliente original. A dívida será registrada na conta do responsável pela retirada.</div>
+    <div class="field"><label>Pessoa responsável pela retirada *</label>
+      <select id="respId">${clientes.map(c=>`<option value="${c.id}">${esc(c.nome)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Data da retirada</label><input type="date" id="dataRet" value="${todayISO()}"></div>
+    <div class="field"><label>Prazo (dias)</label><input type="number" id="prazoD" value="${State.config.prazoFiadoPadrao||15}"></div>
+    <div class="field"><label>Data de vencimento</label><input type="date" id="vencD" value="${addDays(todayISO(),parseInt(State.config.prazoFiadoPadrao)||15)}"></div>
+    <div class="warn-box">⚠️ <b>A dívida só será criada ao confirmar.</b> Apenas selecionar a pessoa não gera dívida.</div>
+    <div id="limiteInfo"></div>
+  `;
+  const m = openModal('Lançar na Conta de um Parceiro',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn success" id="confirmar">✅ Confirmar Retirada e Lançar</button>`,{maxWidth:'560px'});
+  const atualizarLimite = ()=>{
+    const pid = m.el.querySelector('#respId').value;
+    const p = State.clientes.find(c=>c.id===pid);
+    const info = m.el.querySelector('#limiteInfo');
+    if(p && p.limite>0){
+      const usado = saldoPessoa(pid);
+      const disp = Math.max(0,p.limite-usado);
+      const novo = usado + tot.total;
+      const excede = novo > p.limite;
+      info.innerHTML = `<div class="info-box">Limite: ${fmtMoney(p.limite)} · Usado: ${fmtMoney(usado)} · Disponível: ${fmtMoney(disp)}${excede?`<br><b style="color:var(--danger)">⚠️ Esta retirada ultrapassa o limite em ${fmtMoney(novo-p.limite)}</b>`:''}</div>`;
+    } else info.innerHTML = '';
+  };
+  m.el.querySelector('#respId').onchange = atualizarLimite;
+  atualizarLimite();
+  m.el.querySelector('#prazoD').onchange = ()=>{
+    const d = m.el.querySelector('#dataRet').value;
+    const pd = parseInt(m.el.querySelector('#prazoD').value)||15;
+    m.el.querySelector('#vencD').value = addDays(d,pd);
+  };
+  m.el.querySelector('#dataRet').onchange = ()=>{
+    const d = m.el.querySelector('#dataRet').value;
+    const pd = parseInt(m.el.querySelector('#prazoD').value)||15;
+    m.el.querySelector('#vencD').value = addDays(d,pd);
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+  m.el.querySelector('#confirmar').onclick = async ()=>{
+    const pessoaId = m.el.querySelector('#respId').value;
+    const p = State.clientes.find(c=>c.id===pessoaId);
+    if(p && p.limite>0){
+      const usado = saldoPessoa(pessoaId);
+      if(usado + tot.total > p.limite){
+        const ok = await confirmar(`Esta retirada ultrapassa o limite de crédito em ${fmtMoney(usado+tot.total-p.limite)}. Autorizar manualmente?`,'Limite Ultrapassado');
+        if(!ok) return;
+      }
+    }
+    const dataRet = m.el.querySelector('#dataRet').value;
+    const venc = m.el.querySelector('#vencD').value;
+    const ok = await confirmar(`Confirmar a retirada de ${fmtMoney(tot.total)} na conta de ${p?p.nome:'?'} com vencimento em ${fmtDate(venc)}?`,'Confirmar Retirada');
+    if(!ok) return;
+    if(!o.numero){
+      const c = await dbGet('contador','orcamentos');
+      const n = c ? (c.valor||0)+1 : 1;
+      o.numero = n;
+      await dbPut('contador',{nome:'orcamentos',valor:n});
+    }
+    o.subtotal = tot.sub; o.total = tot.total; o.descontoCalc = tot.desc;
+    o.dataVencimento = o.validadeDias ? addDays(o.dataEmissao,o.validadeDias) : '';
+    const divida = {
+      id:uid(), pessoaId, clienteOriginalId:o.clienteId, orcamentoId:o.id,
+      valorTotal:tot.total, saldo:tot.total, data:dataRet, vencimento:venc,
+      descricao:'Retirada ref. orçamento Nº '+o.numero,
+      itens:o.itens.map(i=>({descricao:i.descricao,qtd:i.qtd,preco:i.preco,unidade:i.unidade,observacao:i.observacao})),
+      observacoes:o.observacoes||'', estornada:false, criadoEm:nowISO(), origem:'orcamento'
+    };
+    State.dividas.push(divida); await dbPut('dividas',divida);
+    o.vincDívida = divida.id;
+    const idx = State.orcamentos.findIndex(x=>x.id===o.id);
+    if(idx>=0) State.orcamentos[idx]=o; else State.orcamentos.push(o);
+    await dbPut('orcamentos',o);
+    await logHist('retirada_orcamento',divida.id,null,{pessoaId,orcamentoId:o.id,total:tot.total});
+    m.close();
+    toast('Retirada lançada com sucesso','success');
+    go('historico');
+  };
+}
+
+// ============================================================
+// HISTÓRICO
+// ============================================================
+function renderHistorico(el){
+  el.innerHTML = `
+    <h1>📋 Histórico de Orçamentos</h1>
+    <button class="btn block" onclick="go('novoOrc')">➕ Novo Orçamento</button>
+    <div class="search-bar" style="margin-top:10px"><span class="ic">🔍</span><input id="buscaHist" placeholder="Buscar por número, cliente..."></div>
+    <div class="row tight">
+      <select id="filtroSit"><option value="">Todas as situações</option>
+        <option value="em_aberto">Em aberto</option>
+        <option value="enviado">Enviado</option>
+        <option value="aprovado">Aprovado</option>
+        <option value="recusado">Recusado</option>
+        <option value="vencido">Vencido</option>
+      </select>
+    </div>
+    <div id="orcLista" style="margin-top:10px"></div>
+  `;
+  const renderLista = ()=>{
+    const q = ($('#buscaHist').value||'').toLowerCase();
+    const sit = $('#filtroSit').value;
+    let lista = State.orcamentos.slice();
+    if(q) lista = lista.filter(o=>{
+      const cli = State.clientes.find(c=>c.id===o.clienteId)||{};
+      return String(o.numero).includes(q) || (cli.nome||'').toLowerCase().includes(q);
+    });
+    if(sit) lista = lista.filter(o=>o.situacao===sit);
+    lista.sort((a,b)=>(b.numero||0)-(a.numero||0));
+    const cont = $('#orcLista');
+    if(!lista.length){cont.innerHTML=`<div class="empty"><div class="big">📋</div>Nenhum orçamento.</div>`;return;}
+    const sitBadge = {em_aberto:'b-yellow',enviado:'b-blue',aprovado:'b-green',recusado:'b-red',vencido:'b-gray'};
+    const sitLabel = {em_aberto:'Em aberto',enviado:'Enviado',aprovado:'Aprovado',recusado:'Recusado',vencido:'Vencido'};
+    cont.innerHTML = lista.map(o=>{
+      const cli = State.clientes.find(c=>c.id===o.clienteId)||{nome:'—'};
+      const vinc = o.vincDívida?'🔗':''; 
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:8px;align-items:start">
+          <div>
+            <div style="font-weight:700;color:var(--blue)">Nº ${o.numero} ${vinc}</div>
+            <div class="mini">${esc(cli.nome)} · ${fmtDate(o.dataEmissao)}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;color:var(--blue)">${fmtMoney(o.total)}</div>
+            <span class="badge ${sitBadge[o.situacao]||'b-gray'}">${sitLabel[o.situacao]||o.situacao}</span>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn sm outline" onclick="verOrcamento('${o.id}')">👁 Ver</button>
+          <button class="btn sm ghost" onclick="editarOrcamento('${o.id}')">✏️ Editar</button>
+          <button class="btn sm ghost" onclick="duplicarOrcamento('${o.id}')">📄 Duplicar</button>
+          <button class="btn sm danger" onclick="excluirOrcamento('${o.id}')">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  };
+  $('#buscaHist').oninput = renderLista;
+  $('#filtroSit').onchange = renderLista;
+  renderLista();
+}
+
+function editarOrcamento(id){ go('novoOrc',id); }
+
+async function excluirOrcamento(id){
+  const o = State.orcamentos.find(x=>x.id===id);
+  if(!o) return;
+  if(o.vincDívida){toast('Orçamento vinculado a dívida. Cancele a dívida primeiro.','error');return;}
+  const ok = await confirmar(`Excluir orçamento Nº ${o.numero}? O número não será reutilizado.`,'Excluir');
+  if(!ok) return;
+  State.orcamentos = State.orcamentos.filter(x=>x.id!==id);
+  await dbDelete('orcamentos',id);
+  await logHist('orcamento_excluido',id,{numero:o.numero,total:o.total},null);
+  toast('Excluído','success');renderHistorico($('#app'));
+}
+
+function duplicarOrcamento(id){
+  const o = State.orcamentos.find(x=>x.id===id);
+  if(!o) return;
+  const novo = JSON.parse(JSON.stringify(o));
+  novo.id = uid(); novo.numero = null; novo.dataEmissao = todayISO();
+  novo.criadoEm = nowISO(); novo.vincDívida = null; novo.situacao = 'em_aberto';
+  orcEditando = novo;
+  go('novoOrc',novo.id);
+  setTimeout(()=>renderOrcForm($('#app')),50);
+}
+
+function verOrcamento(id){
+  const o = State.orcamentos.find(x=>x.id===id);
+  if(!o) return;
+  const cli = State.clientes.find(c=>c.id===o.clienteId)||{nome:'—'};
+  const vinc = o.vincDívida ? State.dividas.find(d=>d.id===o.vincDívida) : null;
+  const vincP = vinc ? State.clientes.find(c=>c.id===vinc.pessoaId) : null;
+  const body = `
+    <div style="margin-bottom:10px">
+      <div class="row tight" style="margin-bottom:8px">
+        <select id="novaSit" style="flex:1">
+          <option value="em_aberto" ${o.situacao==='em_aberto'?'selected':''}>Em aberto</option>
+          <option value="enviado" ${o.situacao==='enviado'?'selected':''}>Enviado</option>
+          <option value="aprovado" ${o.situacao==='aprovado'?'selected':''}>Aprovado</option>
+          <option value="recusado" ${o.situacao==='recusado'?'selected':''}>Recusado</option>
+          <option value="vencido" ${o.situacao==='vencido'?'selected':''}>Vencido</option>
+        </select>
+        <button class="btn sm" style="flex:0 0 auto" id="aplicarSit">Aplicar</button>
+      </div>
+    </div>
+    <div id="orcPreviewWrap" class="orc-preview">${orcHTML(o,cli,o.modelo)}</div>
+    ${vinc?`<div class="info-box" style="margin-top:10px">🔗 Lançado na conta de <b>${esc(vincP?vincP.nome:'?')}</b> — vencimento ${fmtDate(vinc.vencimento)} — saldo ${fmtMoney(vinc.saldo)}</div>`:''}
+  `;
+  const foot = `
+    <button class="btn ghost" id="fechar">Fechar</button>
+    <button class="btn yellow" id="png">🖼 PNG</button>
+    <button class="btn" id="pdf">📄 PDF</button>
+  `;
+  const m = openModal('Orçamento Nº '+o.numero,body,foot,{maxWidth:'720px'});
+  m.el.querySelector('#fechar').onclick = m.close;
+  m.el.querySelector('#aplicarSit').onclick = async ()=>{
+    o.situacao = m.el.querySelector('#novaSit').value;
+    await dbPut('orcamentos',o);
+    toast('Situação atualizada','success');
+    go('historico');
+  };
+  m.el.querySelector('#png').onclick = ()=>exportarPNG(m.el.querySelector('#orcPreviewWrap'),'orcamento_'+o.numero);
+  m.el.querySelector('#pdf').onclick = ()=>exportarPDF(m.el.querySelector('#orcPreviewWrap'),'orcamento_'+o.numero);
+  if(!vinc){
+    const b = document.createElement('button');
+    b.className='btn success'; b.textContent='🤝 Lançar na conta de um parceiro';
+    b.onclick = ()=>{m.close(); orcEditando = JSON.parse(JSON.stringify(o)); adicionarContaParceiro();};
+    m.el.querySelector('.modal-foot').prepend(b);
+  }
+}
+
+function orcHTML(o,cli,modelo){
+  const tot = calcTotaisOrc(o);
+  const cfg = State.config;
+  const dtEm = fmtDate(o.dataEmissao);
+  const validade = o.validadeDias ? fmtDate(addDays(o.dataEmissao,o.validadeDias)) : '';
+  const itensHTML = o.itens.map((it,i)=>`
+    <tr>
+      <td>${i+1}</td>
+      <td>
+        ${esc(it.descricao)}
+        ${it.observacao?`<div style="font-size:10px;color:#666;font-style:italic">${esc(it.observacao)}</div>`:''}
+      </td>
+      <td style="text-align:center">${it.qtd} ${esc(it.unidade||'')}</td>
+      <td style="text-align:right">${fmtMoney(it.preco)}</td>
+      <td style="text-align:right">${fmtMoney(it.qtd*it.preco)}</td>
+    </tr>`).join('');
+  if(modelo==='tradicional'){
+    return `
+      <div style="background:#fff;color:#000;padding:6px">
+        <div style="text-align:center;border-bottom:2px solid #000;padding-bottom:8px;margin-bottom:12px">
+          <div style="font-size:18px;font-weight:800">${esc(cfg.razaoSocial||cfg.nomeFantasia||'CASA DA ELÉTRICA')}</div>
+          <div style="font-size:11px">${esc(cfg.endereco||'')}${cfg.cep?' - CEP '+esc(cfg.cep):''}</div>
+          <div style="font-size:11px">${cfg.cnpj?'CNPJ: '+esc(cfg.cnpj)+' | ':''}${cfg.telefone?'Tel: '+esc(cfg.telefone):''}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:10px">
+          <div><b>ORÇAMENTO Nº ${o.numero}</b></div>
+          <div>Data: ${dtEm}${validade?' · Validade: '+validade:''}</div>
+        </div>
+        <div style="font-size:12px;margin-bottom:10px"><b>Cliente:</b> ${esc(cli.nome)}${cli.telefone?' · Tel: '+esc(cli.telefone):''}${cli.endereco?'<br>'+esc(cli.endereco):''}</div>
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr style="border-bottom:2px solid #000">
+            <th style="text-align:left;padding:4px">#</th>
+            <th style="text-align:left;padding:4px">Descrição</th>
+            <th style="text-align:center;padding:4px">Qtd</th>
+            <th style="text-align:right;padding:4px">Unit.</th>
+            <th style="text-align:right;padding:4px">Total</th>
+          </tr></thead>
+          <tbody>${itensHTML}</tbody>
+        </table>
+        <div style="margin-top:12px;font-size:12px">
+          <div style="display:flex;justify-content:flex-end;gap:20px"><span>Subtotal:</span><b>${fmtMoney(tot.sub)}</b></div>
+          ${tot.desc?`<div style="display:flex;justify-content:flex-end;gap:20px"><span>Desconto:</span><b>- ${fmtMoney(tot.desc)}</b></div>`:''}
+          ${o.frete?`<div style="display:flex;justify-content:flex-end;gap:20px"><span>Frete:</span><b>${fmtMoney(o.frete)}</b></div>`:''}
+          <div style="display:flex;justify-content:flex-end;gap:20px;margin-top:4px;font-size:16px;border-top:2px solid #000;padding-top:4px"><span><b>TOTAL:</b></span><b>${fmtMoney(tot.total)}</b></div>
+        </div>
+        ${o.condicaoPagamento?`<div style="font-size:11px;margin-top:8px"><b>Condição:</b> ${esc(o.condicaoPagamento)}</div>`:''}
+        ${o.observacoes?`<div style="font-size:11px;margin-top:8px;white-space:pre-wrap"><b>Obs:</b> ${esc(o.observacoes)}</div>`:''}
+        <div style="text-align:center;margin-top:20px;font-size:10px;border-top:1px solid #999;padding-top:6px">${esc(o.rodape||cfg.rodapePadrao||'')}</div>
+      </div>
+    `;
+  }
+  return `
+    <div style="background:#fff;padding:6px">
+      <div style="background:linear-gradient(135deg,#0a3d8f,#0d4fb8);color:#fff;padding:16px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          ${cfg.logo?`<img src="${cfg.logo}" style="max-height:50px;margin-bottom:6px;display:block">`:''}
+          <div style="font-size:18px;font-weight:800">${esc(cfg.nomeFantasia||'CASA DA ELÉTRICA')}</div>
+          <div style="font-size:11px;opacity:.9">${esc(cfg.razaoSocial||'')} ${cfg.cnpj?'· '+esc(cfg.cnpj):''}</div>
+          <div style="font-size:11px;opacity:.9">${esc(cfg.endereco||'')} ${cfg.telefone?'· '+esc(cfg.telefone):''}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="background:#ffc400;color:#0a3d8f;padding:6px 10px;border-radius:8px;font-weight:900;font-size:12px">ORÇAMENTO</div>
+          <div style="font-size:24px;font-weight:900;margin-top:6px">Nº ${o.numero}</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;padding:10px 0;border-bottom:2px solid #e2e8f0;margin-bottom:10px">
+        <div><b style="color:#0a3d8f">CLIENTE:</b> ${esc(cli.nome)}${cli.telefone?'<br>Tel: '+esc(cli.telefone):''}</div>
+        <div style="text-align:right"><b style="color:#0a3d8f">EMISSÃO:</b> ${dtEm}${validade?'<br>Validade: '+validade:''}</div>
+      </div>
+      <table style="width:100%;border-collapse:collapse;font-size:12px">
+        <thead><tr style="background:#e6efff;color:#0a3d8f">
+          <th style="text-align:left;padding:8px">#</th>
+          <th style="text-align:left;padding:8px">Descrição</th>
+          <th style="text-align:center;padding:8px">Qtd</th>
+          <th style="text-align:right;padding:8px">Unit.</th>
+          <th style="text-align:right;padding:8px">Total</th>
+        </tr></thead>
+        <tbody>${itensHTML}</tbody>
+      </table>
+      <div style="background:#e6efff;padding:10px;border-radius:8px;margin-top:12px">
+        <div style="display:flex;justify-content:flex-end;gap:20px;font-size:12px"><span>Subtotal:</span><b>${fmtMoney(tot.sub)}</b></div>
+        ${tot.desc?`<div style="display:flex;justify-content:flex-end;gap:20px;font-size:12px"><span>Desconto:</span><b>- ${fmtMoney(tot.desc)}</b></div>`:''}
+        ${o.frete?`<div style="display:flex;justify-content:flex-end;gap:20px;font-size:12px"><span>Frete:</span><b>${fmtMoney(o.frete)}</b></div>`:''}
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:20px;margin-top:6px;padding-top:6px;border-top:2px solid #0a3d8f">
+          <span style="font-weight:800;color:#0a3d8f">TOTAL:</span>
+          <span style="background:#ffc400;color:#0a3d8f;padding:8px 14px;border-radius:8px;font-weight:900;font-size:20px">${fmtMoney(tot.total)}</span>
+        </div>
+      </div>
+      ${o.condicaoPagamento?`<div style="font-size:12px;margin-top:8px"><b style="color:#0a3d8f">Condição:</b> ${esc(o.condicaoPagamento)}</div>`:''}
+      ${o.observacoes?`<div style="font-size:12px;margin-top:8px;white-space:pre-wrap;background:#fff8e1;padding:8px;border-radius:6px"><b>Observações:</b> ${esc(o.observacoes)}</div>`:''}
+      <div style="text-align:center;margin-top:18px;font-size:11px;color:#666;border-top:1px solid #e2e8f0;padding-top:8px">${esc(o.rodape||cfg.rodapePadrao||'')}</div>
+    </div>
+  `;
+}
+
+// ---------- EXPORTAÇÃO ----------
+async function exportarPNG(elemento,nome){
+  if(typeof html2canvas==='undefined'){toast('Biblioteca indisponível','error');return;}
+  toast('Gerando PNG...');
+  try{
+    const canvas = await html2canvas(elemento,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const link = document.createElement('a');
+    link.download = (nome||'documento')+'.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    toast('PNG gerado','success');
+  }catch(e){console.error(e);toast('Erro ao gerar PNG: '+e.message,'error');}
+}
+async function exportarPDF(elemento,nome){
+  if(typeof html2canvas==='undefined'||!window.jspdf){toast('Biblioteca indisponível','error');return;}
+  toast('Gerando PDF...');
+  try{
+    const canvas = await html2canvas(elemento,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+    const imgData = canvas.toDataURL('image/jpeg',0.92);
+    const {jsPDF} = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    const margin = 8;
+    const maxW = pw - margin*2;
+    const ratio = canvas.height/canvas.width;
+    let imgW = maxW;
+    let imgH = imgW*ratio;
+    if(imgH <= ph - margin*2){
+      pdf.addImage(imgData,'JPEG',margin,margin,imgW,imgH);
+    } else {
+      const pageHpx = (ph - margin*2) * (canvas.width/maxW);
+      let y = 0;
+      while(y < canvas.height){
+        const sliceH = Math.min(pageHpx, canvas.height - y);
+        const tmp = document.createElement('canvas');
+        tmp.width = canvas.width;
+        tmp.height = sliceH;
+        tmp.getContext('2d').drawImage(canvas,0,y,canvas.width,sliceH,0,0,canvas.width,sliceH);
+        const sliceData = tmp.toDataURL('image/jpeg',0.92);
+        if(y>0) pdf.addPage();
+        const hmm = sliceH * (maxW/canvas.width);
+        pdf.addImage(sliceData,'JPEG',margin,margin,maxW,hmm);
+        y += sliceH;
+      }
+    }
+    pdf.save((nome||'documento')+'.pdf');
+    toast('PDF gerado','success');
+  }catch(e){console.error(e);toast('Erro ao gerar PDF: '+e.message,'error');}
+}
+
+// ============================================================
+// PARCEIROS
+// ============================================================
+function renderParceiros(el){
+  const comMov = State.clientes.filter(c=>{
+    const saldo = saldoPessoa(c.id);
+    const classes = State.classificacoes.filter(x=>x.pessoaId===c.id);
+    return saldo>0 || classes.length>0;
+  });
+  el.innerHTML = `
+    <h1>🤝 Pessoas e Parceiros</h1>
+    <div class="info-box">Área para consultar pessoas com classificação ou débitos. O cadastro é compartilhado.</div>
+    <button class="btn block" onclick="novoCliente()">➕ Nova Pessoa</button>
+    <div class="search-bar" style="margin-top:10px"><span class="ic">🔍</span><input id="buscaParc" placeholder="Buscar..."></div>
+    <div id="parcLista"></div>
+  `;
+  const renderLista = ()=>{
+    const q = ($('#buscaParc').value||'').toLowerCase();
+    let lista = comMov.slice();
+    if(q) lista = lista.filter(c=>(c.nome||'').toLowerCase().includes(q));
+    lista.sort((a,b)=>saldoPessoa(b.id)-saldoPessoa(a.id));
+    const cont = $('#parcLista');
+    if(!lista.length){cont.innerHTML=`<div class="empty"><div class="big">🤝</div>Nenhuma pessoa com classificação ou débito.</div>`;return;}
+    cont.innerHTML = lista.map(c=>{
+      const classes = State.classificacoes.filter(x=>x.pessoaId===c.id).map(x=>x.tipo);
+      const saldo = saldoPessoa(c.id);
+      const venc = dividasAbertasPessoa(c.id).filter(d=>d.vencimento<todayISO()).reduce((s,d)=>s+d.saldo,0);
+      return `<div class="card" onclick="verContaPessoa('${c.id}')">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--blue)">${esc(c.nome)}</div>
+            ${classes.length?`<div class="chips">${classes.map(cl=>`<span class="chip">${esc(cl)}</span>`).join('')}</div>`:''}
+            ${c.limite?`<div class="mini">Limite: ${fmtMoney(c.limite)}</div>`:''}
+          </div>
+          <div style="text-align:right">
+            ${saldo>0?`<div style="font-weight:800;color:var(--danger)">${fmtMoney(saldo)}</div>`:''}
+            ${venc>0?`<div class="mini" style="color:var(--danger)">Vencido: ${fmtMoney(venc)}</div>`:''}
+            ${saldo===0?`<div style="color:var(--success);font-weight:700;font-size:12px">✓ Em dia</div>`:''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  };
+  $('#buscaParc').oninput = renderLista;
+  renderLista();
+}
+
+// ============================================================
+// CONTAS
+// ============================================================
+function renderContas(el){
+  const pessoas = State.clientes.filter(c=>{
+    return saldoPessoa(c.id)>0 || State.dividas.some(d=>d.pessoaId===c.id);
+  }).sort((a,b)=>saldoPessoa(b.id)-saldoPessoa(a.id));
+  const total = totalReceber();
+  el.innerHTML = `
+    <h1>💳 Contas e Débitos</h1>
+    <div class="grid c2">
+      <div class="kpi"><div class="lbl">Total a receber</div><div class="val">${fmtMoney(total)}</div></div>
+      <div class="kpi danger"><div class="lbl">Vencido</div><div class="val">${fmtMoney(totalVencido())}</div></div>
+    </div>
+    <div class="actions" style="margin:12px 0">
+      <button class="btn" onclick="novaRetiradaAvulsa()">📦 Nova Retirada</button>
+      <button class="btn outline" onclick="novoValorLivre()">💵 Valor Livre</button>
+      <button class="btn success" onclick="go('recebimentos')">💰 Receber</button>
+    </div>
+    <div class="search-bar"><span class="ic">🔍</span><input id="buscaConta" placeholder="Buscar pessoa..."></div>
+    <div id="contasLista"></div>
+  `;
+  const renderLista = ()=>{
+    const q = ($('#buscaConta').value||'').toLowerCase();
+    let lista = pessoas.slice();
+    if(q) lista = lista.filter(c=>(c.nome||'').toLowerCase().includes(q));
+    const cont = $('#contasLista');
+    if(!lista.length){cont.innerHTML=`<div class="empty"><div class="big">💳</div>Nenhuma conta.</div>`;return;}
+    cont.innerHTML = lista.map(c=>{
+      const saldo = saldoPessoa(c.id);
+      const abertas = dividasAbertasPessoa(c.id);
+      const vencidas = abertas.filter(d=>d.vencimento<todayISO()).length;
+      const prox = abertas.sort((a,b)=>a.vencimento.localeCompare(b.vencimento))[0];
+      return `<div class="card" onclick="verContaPessoa('${c.id}')">
+        <div style="display:flex;justify-content:space-between;gap:8px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;color:var(--blue)">${esc(c.nome)}</div>
+            <div class="mini">${abertas.length} dívida(s) aberta(s)${vencidas?` · <b style="color:var(--danger)">${vencidas} vencida(s)</b>`:''}</div>
+            ${prox?`<div class="mini">Próximo venc.: ${fmtDate(prox.vencimento)}</div>`:''}
+          </div>
+          <div style="text-align:right">
+            <div style="font-weight:800;color:${saldo>0?'var(--danger)':'var(--success)'};font-size:16px">${fmtMoney(saldo)}</div>
+          </div>
+        </div>
+        ${c.limite?`<div class="progress ${saldo>c.limite?'danger':saldo>c.limite*0.8?'warn':''}"><div style="width:${Math.min(100, saldo/c.limite*100)}%"></div></div><div class="mini">Limite: ${fmtMoney(c.limite)}</div>`:''}
+      </div>`;
+    }).join('');
+  };
+  $('#buscaConta').oninput = renderLista;
+  renderLista();
+}
+
+function verContaPessoa(pessoaId){
+  const p = State.clientes.find(c=>c.id===pessoaId);
+  if(!p) return;
+  const dividas = State.dividas.filter(d=>d.pessoaId===pessoaId).sort((a,b)=>b.data.localeCompare(a.data));
+  const pagamentos = State.pagamentos.filter(pg=>pg.pessoaId===pessoaId).sort((a,b)=>b.data.localeCompare(a.data));
+  const saldo = saldoPessoa(pessoaId);
+  const classes = State.classificacoes.filter(x=>x.pessoaId===pessoaId).map(x=>x.tipo);
+  const body = `
+    <div class="card blue">
+      <div style="font-size:20px;font-weight:800">${esc(p.nome)}</div>
+      ${classes.length?`<div style="font-size:11px;opacity:.9">${classes.join(' · ')}</div>`:''}
+      <div style="font-size:12px;margin-top:6px">${p.telefone?'📞 '+esc(p.telefone):''} ${p.whatsapp?'· 📱 '+esc(p.whatsapp):''}</div>
+      <div style="font-size:26px;font-weight:900;margin-top:10px">${fmtMoney(saldo)}</div>
+      <div style="font-size:11px;opacity:.8">SALDO DEVEDOR</div>
+      ${p.limite?`<div style="font-size:11px;margin-top:4px">Limite: ${fmtMoney(p.limite)} · Disponível: ${fmtMoney(Math.max(0,p.limite-saldo))}</div>`:''}
+    </div>
+    <div class="tabs">
+      <button class="active" data-tab="div">💳 Dívidas (${dividas.length})</button>
+      <button data-tab="pag">💰 Pagamentos (${pagamentos.length})</button>
+    </div>
+    <div id="tabDiv">
+      ${dividas.length===0?'<div class="empty">Sem dívidas.</div>':dividas.map(d=>{
+        const sit = situacaoDivida(d);
+        const vinc = d.orcamentoId?State.orcamentos.find(o=>o.id===d.orcamentoId):null;
+        return `<div class="card">
+          <div style="display:flex;justify-content:space-between;gap:8px">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:13px">${esc(d.descricao)}</div>
+              <div class="mini">Retirada: ${fmtDate(d.data)} · Venc.: ${fmtDate(d.vencimento)}</div>
+              ${vinc?`<div class="mini">🔗 Orç. Nº ${vinc.numero}</div>`:''}
+              ${(d.itens||[]).map(i=>`<div class="mini" style="padding-left:6px">• ${i.qtd} ${esc(i.unidade||'')} ${esc(i.descricao)} — ${fmtMoney(i.qtd*i.preco)}</div>`).join('')}
+            </div>
+            <div style="text-align:right">
+              <div style="font-weight:800;color:var(--blue)">${fmtMoney(d.valorTotal)}</div>
+              ${d.saldo<d.valorTotal?`<div class="mini">Saldo: ${fmtMoney(d.saldo)}</div>`:''}
+              <span class="badge ${sit.cls}">${sit.label}</span>
+            </div>
+          </div>
+          ${!d.estornada && d.saldo>0?`<div class="actions">
+            <button class="btn sm success" onclick="pagarDividaEspecifica('${d.id}')">💰 Receber</button>
+            <button class="btn sm danger" onclick="estornarDivida('${d.id}')">↩ Estornar</button>
+          </div>`:''}
+          ${d.estornada?`<div class="mini" style="color:var(--danger);margin-top:4px">↩ Estornada</div>`:''}
+        </div>`;
+      }).join('')}
+    </div>
+    <div id="tabPag" class="hidden">
+      ${pagamentos.length===0?'<div class="empty">Sem pagamentos.</div>':pagamentos.map(pg=>`
+        <div class="card">
+          <div style="display:flex;justify-content:space-between">
+            <div>
+              <div style="font-weight:700;color:var(--success)">${fmtMoney(pg.valor)}</div>
+              <div class="mini">${fmtDateTime(pg.data)} · ${esc(pg.forma)}</div>
+              ${pg.obs?`<div class="mini">${esc(pg.obs)}</div>`:''}
+            </div>
+            <button class="btn sm ghost" onclick="verComprovante('${pg.id}')">🧾</button>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="actions" style="margin-top:12px">
+      <button class="btn block" onclick="novaRetiradaAvulsa('${pessoaId}')">📦 Nova Retirada</button>
+    </div>
+  `;
+  const m = openModal('Conta de '+p.nome,body,'<button class="btn ghost" onclick="this.closest(\'.modal-bg\').remove()">Fechar</button>',{maxWidth:'600px'});
+  m.el.querySelectorAll('.tabs button').forEach(b=>{
+    b.onclick = ()=>{
+      m.el.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      m.el.querySelector('#tabDiv').classList.toggle('hidden',b.dataset.tab!=='div');
+      m.el.querySelector('#tabPag').classList.toggle('hidden',b.dataset.tab!=='pag');
+    };
+  });
+}
+
+// ---------- RETIRADA ----------
+let retiradaEdit = null;
+function novaRetiradaAvulsa(pessoaId){
+  retiradaEdit = {
+    id:uid(), pessoaId:pessoaId||'', clienteOriginalId:'',
+    data:todayISO(), vencimento:addDays(todayISO(),parseInt(State.config.prazoFiadoPadrao)||15),
+    itens:[], descricao:'', observacoes:'', tipo:'retirada', origem:'avulsa'
+  };
+  renderRetiradaForm();
+}
+
+function renderRetiradaForm(){
+  const r = retiradaEdit;
+  const clientes = State.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+  const tot = r.itens.reduce((s,i)=>s+i.qtd*i.preco,0);
+  const body = `
+    <div class="field"><label>Pessoa responsável *</label>
+      <select id="rPessoa">${clientes.map(c=>`<option value="${c.id}" ${r.pessoaId===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Cliente atendido (opcional)</label>
+      <select id="rCliente">${clientes.map(c=>`<option value="${c.id}" ${r.clienteOriginalId===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+    </div>
+    <div class="row">
+      <div class="field"><label>Data retirada</label><input type="date" id="rData" value="${r.data}"></div>
+      <div class="field"><label>Vencimento</label><input type="date" id="rVenc" value="${r.vencimento}"></div>
+    </div>
+    <div class="field"><label>Prazo (dias)</label><input type="number" id="rPrazo" value="${daysDiff(r.vencimento,r.data)}"></div>
+    <label>Produtos</label>
+    <div id="rItens">${renderItensRetirada()}</div>
+    <button class="btn outline sm" style="margin-top:6px" onclick="adicionarItemRetirada()">➕ Adicionar Produto</button>
+    <div class="big-total" style="margin-top:10px">Total: ${fmtMoney(tot)}</div>
+    <div class="field"><label>Observações</label><textarea id="rObs" rows="2">${esc(r.observacoes||'')}</textarea></div>
+    <div id="rLimiteInfo"></div>
+  `;
+  const m = openModal('Nova Retirada',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn success" id="ok">✅ Confirmar Retirada</button>`,{maxWidth:'600px'});
+  const updLimite = ()=>{
+    const pid = m.el.querySelector('#rPessoa').value;
+    const p = State.clientes.find(c=>c.id===pid);
+    const info = m.el.querySelector('#rLimiteInfo');
+    if(p && p.limite>0){
+      const usado = saldoPessoa(pid);
+      const novo = usado + tot;
+      info.innerHTML = `<div class="info-box">Limite: ${fmtMoney(p.limite)} · Usado: ${fmtMoney(usado)} · Disponível: ${fmtMoney(Math.max(0,p.limite-usado))}${novo>p.limite?`<br><b style="color:var(--danger)">⚠️ Ultrapassa limite em ${fmtMoney(novo-p.limite)}</b>`:''}</div>`;
+    } else info.innerHTML='';
+  };
+  updLimite();
+  m.el.querySelector('#rPessoa').onchange = ()=>{r.pessoaId=m.el.querySelector('#rPessoa').value;updLimite();};
+  m.el.querySelector('#rCliente').onchange = ()=>r.clienteOriginalId=m.el.querySelector('#rCliente').value;
+  m.el.querySelector('#rData').onchange = ()=>r.data=m.el.querySelector('#rData').value;
+  m.el.querySelector('#rVenc').onchange = ()=>r.vencimento=m.el.querySelector('#rVenc').value;
+  m.el.querySelector('#rPrazo').onchange = ()=>{
+    const pd = parseInt(m.el.querySelector('#rPrazo').value)||15;
+    m.el.querySelector('#rVenc').value = addDays(m.el.querySelector('#rData').value,pd);
+    r.vencimento = m.el.querySelector('#rVenc').value;
+  };
+  m.el.querySelector('#rObs').oninput = ()=>r.observacoes=m.el.querySelector('#rObs').value;
+  m.el.querySelector('#canc').onclick = m.close;
+  m.el.querySelector('#ok').onclick = async ()=>{
+    if(!r.itens.length){toast('Adicione produtos','error');return;}
+    r.pessoaId = m.el.querySelector('#rPessoa').value;
+    r.clienteOriginalId = m.el.querySelector('#rCliente').value;
+    const p = State.clientes.find(c=>c.id===r.pessoaId);
+    if(p && p.limite>0){
+      const usado = saldoPessoa(r.pessoaId);
+      if(usado + tot > p.limite){
+        const ok = await confirmar(`Retirada ultrapassa o limite em ${fmtMoney(usado+tot-p.limite)}. Autorizar?`,'Limite Ultrapassado');
+        if(!ok) return;
+      }
+    }
+    const ok2 = await confirmar(`Confirmar retirada de ${fmtMoney(tot)} na conta de ${p?p.nome:'?'}?`,'Confirmar');
+    if(!ok2) return;
+    r.valorTotal = tot; r.saldo = tot; r.descricao = r.descricao||'Retirada avulsa';
+    r.criadoEm = nowISO();
+    State.dividas.push(r); await dbPut('dividas',r);
+    await logHist('retirada_avulsa',r.id,null,{pessoaId:r.pessoaId,total:tot,itens:r.itens});
+    m.close(); toast('Retirada lançada','success');
+    verContaPessoa(r.pessoaId);
+  };
+}
+
+function renderItensRetirada(){
+  if(!retiradaEdit.itens.length) return '<div class="mini">Nenhum produto adicionado.</div>';
+  return retiradaEdit.itens.map((it,i)=>`
+    <div class="prod-line">
+      <div style="display:flex;justify-content:space-between;gap:6px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:13px;font-weight:700">${it.qtd} × ${esc(it.descricao)}</div>
+          <div class="mini">${fmtMoney(it.preco)} un = ${fmtMoney(it.qtd*it.preco)}</div>
+        </div>
+        <button class="btn sm danger" onclick="removerItemRetirada(${i})">🗑</button>
+      </div>
+    </div>`).join('');
+}
+
+function adicionarItemRetirada(){
+  const body = `
+    <div class="row tight" style="margin-bottom:8px">
+      <button class="btn sm outline fixed" id="btnNovoProdRet">➕ Novo Produto</button>
+    </div>
+    <div class="search-bar"><span class="ic">🔍</span><input id="bProd" placeholder="Buscar..."></div>
+    <div id="lp" style="max-height:280px;overflow-y:auto"></div>
+    <div id="fi" class="hidden" style="border-top:2px solid var(--blue);margin-top:10px;padding-top:10px">
+      <div id="pn" style="font-weight:700;color:var(--blue)"></div>
+      <div class="row"><div class="field"><label>Qtd</label><input id="iq" inputmode="decimal" value="1"></div>
+      <div class="field"><label>Preço unit.</label><input id="ip" inputmode="decimal"></div></div>
+    </div>`;
+  const m = openModal('Adicionar Produto',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn hidden" id="add">Adicionar</button>`);
+  let sel = null;
+  const listar = ()=>{
+    const prods = State.produtos.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+    const q = (m.el.querySelector('#bProd').value||'').toLowerCase();
+    const lst = prods.filter(p=>!q || p.nome.toLowerCase().includes(q));
+    if(!lst.length){m.el.querySelector('#lp').innerHTML='<div class="empty">Nenhum produto. Use "➕ Novo Produto".</div>';return;}
+    m.el.querySelector('#lp').innerHTML = lst.map(p=>`
+      <div class="person-card" data-pid="${p.id}">
+        <div style="display:flex;justify-content:space-between">
+          <div><div class="name" style="font-size:14px">${esc(p.nome)}</div></div>
+          <div style="font-weight:800;color:var(--blue)">${fmtMoney(p.preco)}</div>
+        </div>
+      </div>`).join('');
+    m.el.querySelectorAll('.person-card').forEach(c=>c.onclick=()=>{
+      sel = State.produtos.find(p=>p.id===c.dataset.pid);
+      m.el.querySelector('#fi').classList.remove('hidden');
+      m.el.querySelector('#add').classList.remove('hidden');
+      m.el.querySelector('#pn').textContent = sel.nome;
+      m.el.querySelector('#ip').value = (sel.preco/100).toFixed(2).replace('.',',');
+      m.el.querySelector('#bProd').parentElement.style.display='none';
+      m.el.querySelector('#lp').innerHTML='';
+    });
+  };
+  m.el.querySelector('#bProd').oninput = listar;
+  m.el.querySelector('#btnNovoProdRet').onclick = ()=>{
+    novoProdutoInline((novoProd)=>{
+      sel = novoProd;
+      m.el.querySelector('#fi').classList.remove('hidden');
+      m.el.querySelector('#add').classList.remove('hidden');
+      m.el.querySelector('#pn').textContent = novoProd.nome;
+      m.el.querySelector('#ip').value = (novoProd.preco/100).toFixed(2).replace('.',',');
+      m.el.querySelector('#bProd').parentElement.style.display='none';
+      m.el.querySelector('#lp').innerHTML='';
+    });
+  };
+  listar();
+  m.el.querySelector('#add').onclick = ()=>{
+    if(!sel) return;
+    const qtd = parseFloat(String(m.el.querySelector('#iq').value).replace(',','.'))||1;
+    const preco = parseMoney(m.el.querySelector('#ip').value);
+    retiradaEdit.itens.push({produtoId:sel.id,descricao:sel.nome,unidade:sel.unidade,qtd,preco});
+    m.close();
+    document.querySelectorAll('.modal-bg').forEach(x=>x.remove());
+    renderRetiradaForm();
+  };
+  m.el.querySelector('#canc').onclick = m.close;
+}
+function removerItemRetirada(i){
+  retiradaEdit.itens.splice(i,1);
+  document.querySelectorAll('.modal-bg').forEach(x=>x.remove());
+  renderRetiradaForm();
+}
+
+function novoValorLivre(pessoaId){
+  const clientes = State.clientes.slice().sort((a,b)=>a.nome.localeCompare(b.nome));
+  const body = `
+    <div class="field"><label>Pessoa *</label>
+      <select id="vPessoa">${clientes.map(c=>`<option value="${c.id}" ${pessoaId===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Descrição da dívida *</label><input id="vDesc"></div>
+    <div class="field"><label>Valor *</label><input id="vValor" inputmode="decimal" placeholder="0,00"></div>
+    <div class="row">
+      <div class="field"><label>Data</label><input type="date" id="vData" value="${todayISO()}"></div>
+      <div class="field"><label>Vencimento</label><input type="date" id="vVenc" value="${addDays(todayISO(),parseInt(State.config.prazoFiadoPadrao)||15)}"></div>
+    </div>
+    <div class="field"><label>Observações</label><textarea id="vObs" rows="2"></textarea></div>
+  `;
+  const m = openModal('Lançamento de Valor Livre',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn success" id="ok">✅ Lançar</button>`);
+  m.el.querySelector('#canc').onclick = m.close;
+  m.el.querySelector('#ok').onclick = async ()=>{
+    const desc = m.el.querySelector('#vDesc').value.trim();
+    const valor = parseMoney(m.el.querySelector('#vValor').value);
+    if(!desc || valor<=0){toast('Preencha descrição e valor','error');return;}
+    const r = {
+      id:uid(), pessoaId:m.el.querySelector('#vPessoa').value, clienteOriginalId:'',
+      data:m.el.querySelector('#vData').value, vencimento:m.el.querySelector('#vVenc').value,
+      descricao:desc, valorTotal:valor, saldo:valor, itens:[],
+      observacoes:m.el.querySelector('#vObs').value.trim(), tipo:'valor_livre',
+      origem:'livre', estornada:false, criadoEm:nowISO()
+    };
+    State.dividas.push(r); await dbPut('dividas',r);
+    await logHist('valor_livre',r.id,null,{pessoaId:r.pessoaId,valor});
+    m.close(); toast('Dívida lançada','success'); go('contas');
+  };
+}
+
+async function estornarDivida(dividaId){
+  const d = State.dividas.find(x=>x.id===dividaId);
+  if(!d || d.estornada) return;
+  const pagos = State.distrib.filter(x=>x.dividaId===d.id).reduce((s,x)=>s+x.valor,0);
+  const motivo = await prompt2('Estornar Dívida','Motivo do estorno *');
+  if(!motivo || !motivo.trim()){toast('Informe o motivo','error');return;}
+  if(pagos>0){
+    const ok = await confirmar(`Esta dívida já recebeu ${fmtMoney(pagos)}. O estorno abaterá o valor recebido do saldo. Confirmar?`,'Atenção');
+    if(!ok) return;
+  }
+  const ok2 = await confirmar(`Estornar a dívida "${d.descricao}"? O histórico será preservado.`,'Confirmar Estorno');
+  if(!ok2) return;
+  const est = {
+    id:uid(), dividaId:d.id, valorAbatido:d.saldo||calcularSaldo(d), motivo,
+    data:nowISO(), status:'confirmado', pagamentosAbatidos:pagos
+  };
+  State.estornos.push(est); await dbPut('estornos',est);
+  d.estornada = true; d.saldo = 0;
+  await dbPut('dividas',d);
+  await logHist('estorno_divida',d.id,{valorTotal:d.valorTotal,motivo:''},{motivo,valorAbatido:est.valorAbatido});
+  toast('Dívida estornada','success');
+  document.querySelectorAll('.modal-bg').forEach(x=>x.remove());
+  go('contas');
+}
+
+// ============================================================
+// RECEBIMENTOS
+// ============================================================
+function renderRecebimentos(el){
+  const total = State.pagamentos.reduce((s,p)=>s+p.valor,0);
+  el.innerHTML = `
+    <h1>💰 Recebimentos</h1>
+    <div class="grid c2">
+      <div class="kpi"><div class="lbl">Total recebido</div><div class="val">${fmtMoney(total)}</div></div>
+      <div class="kpi success"><div class="lbl">Este mês</div><div class="val">${fmtMoney(totalRecebidoMes())}</div></div>
+    </div>
+    <button class="btn block" style="margin:12px 0" onclick="novoRecebimento()">💰 Novo Recebimento</button>
+    <h2>Histórico</h2>
+    <div id="recLista"></div>
+  `;
+  const lista = State.pagamentos.slice().sort((a,b)=>b.data.localeCompare(a.data));
+  const cont = $('#recLista');
+  if(!lista.length){cont.innerHTML=`<div class="empty"><div class="big">💰</div>Nenhum recebimento.</div>`;return;}
+  cont.innerHTML = lista.map(p=>{
+    const pes = State.clientes.find(c=>c.id===p.pessoaId)||{nome:'?'};
+    return `<div class="card">
+      <div style="display:flex;justify-content:space-between">
+        <div>
+          <div style="font-weight:700;color:var(--blue)">${esc(pes.nome)}</div>
+          <div class="mini">${fmtDateTime(p.data)} · ${esc(p.forma)}</div>
+          ${p.obs?`<div class="mini">${esc(p.obs)}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <div style="font-weight:800;color:var(--success);font-size:16px">${fmtMoney(p.valor)}</div>
+          <button class="btn sm ghost" onclick="verComprovante('${p.id}')">🧾</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function pagarDividaEspecifica(dividaId){
+  const d = State.dividas.find(x=>x.id===dividaId);
+  if(!d) return;
+  novoRecebimento(d.pessoaId,[d.id]);
+}
+
+function novoRecebimento(pessoaIdSel, dividasPreSel){
+  const clientes = State.clientes.filter(c=>State.dividas.some(d=>d.pessoaId===c.id && !d.estornada && d.saldo>0));
+  if(!clientes.length){toast('Nenhuma pessoa com saldo devedor','error');return;}
+  const body = `
+    <div class="field"><label>Pessoa *</label>
+      <select id="rcPessoa">${clientes.map(c=>`<option value="${c.id}" ${pessoaIdSel===c.id?'selected':''}>${esc(c.nome)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Valor recebido *</label><input id="rcValor" inputmode="decimal" placeholder="0,00"></div>
+    <div class="field"><label>Forma de pagamento</label>
+      <select id="rcForma"><option>Dinheiro</option><option>PIX</option><option>Cartão</option><option>Transferência</option><option>Outros</option></select>
+    </div>
+    <div class="field"><label>Data e hora</label><input type="datetime-local" id="rcData" value="${new Date().toISOString().slice(0,16)}"></div>
+    <div class="field"><label>Observação</label><input id="rcObs"></div>
+    <div class="tabs" style="margin-top:12px">
+      <button class="active" data-modo="manual">📋 Manual</button>
+      <button data-modo="auto">⚡ Automático (mais antigas)</button>
+    </div>
+    <div id="divManual"><div id="listaDividas"></div></div>
+    <div id="divAuto" class="hidden"><div id="distAuto" class="info-box">Digite o valor para ver a distribuição automática.</div></div>
+  `;
+  const m = openModal('Novo Recebimento',body,
+    `<button class="btn ghost" id="canc">Cancelar</button><button class="btn success" id="ok">💰 Confirmar Recebimento</button>`,{maxWidth:'640px'});
+  let modo = 'manual';
+  const abatimentos = {};
+
+  const renderDividas = ()=>{
+    const pid = m.el.querySelector('#rcPessoa').value;
+    const ds = dividasAbertasPessoa(pid).sort((a,b)=>a.vencimento.localeCompare(b.vencimento)||a.criadoEm.localeCompare(b.criadoEm));
+    if(!ds.length){m.el.querySelector('#listaDividas').innerHTML='<div class="empty">Sem dívidas.</div>';return;}
+    m.el.querySelector('#listaDividas').innerHTML = ds.map(d=>{
+      const sit = situacaoDivida(d);
+      const val = abatimentos[d.id]||0;
+      return `<div class="card">
+        <div style="display:flex;justify-content:space-between;gap:6px">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${esc(d.descricao)}</div>
+            <div class="mini">Venc.: ${fmtDate(d.vencimento)} · Saldo: <b>${fmtMoney(d.saldo)}</b></div>
+            <span class="badge ${sit.cls}">${sit.label}</span>
+          </div>
+        </div>
+        <div class="row tight" style="margin-top:6px">
+          <input inputmode="decimal" placeholder="Abater" value="${val?(val/100).toFixed(2).replace('.',','):''}" data-did="${d.id}" class="inp-abater">
+          <button class="btn sm outline fixed" data-full="${d.id}">Tudo</button>
+        </div>
+      </div>`;
+    }).join('');
+    m.el.querySelectorAll('.inp-abater').forEach(inp=>{
+      inp.oninput = ()=>{abatimentos[inp.dataset.did] = parseMoney(inp.value);};
+    });
+    m.el.querySelectorAll('[data-full]').forEach(b=>{
+      b.onclick = ()=>{
+        const d = State.dividas.find(x=>x.id===b.dataset.full);
+        abatimentos[d.id] = d.saldo;
+        renderDividas();
+      };
+    });
+  };
+  const calcAuto = ()=>{
+    const pid = m.el.querySelector('#rcPessoa').value;
+    const valor = parseMoney(m.el.querySelector('#rcValor').value);
+    const ds = dividasAbertasPessoa(pid).sort((a,b)=>a.vencimento.localeCompare(b.vencimento)||a.criadoEm.localeCompare(b.criadoEm));
+    let rest = valor;
+    const dist = [];
+    for(const d of ds){
+      if(rest<=0) break;
+      const ab = Math.min(rest,d.saldo);
+      if(ab>0){dist.push({d,ab}); rest-=ab;}
+    }
+    Object.keys(abatimentos).forEach(k=>delete abatimentos[k]);
+    dist.forEach(x=>abatimentos[x.d.id]=x.ab);
+    const cont = m.el.querySelector('#distAuto');
+    if(!dist.length){cont.innerHTML='<div class="info-box">Sem distribuição.</div>';return;}
+    cont.innerHTML = `<div class="info-box"><b>Distribuição automática (mais antigas primeiro):</b></div>`+
+      dist.map(x=>`<div class="list-item"><span>${esc(x.d.descricao)} (venc ${fmtDate(x.d.vencimento)})</span><span class="r">${fmtMoney(x.ab)}</span></div>`).join('')+
+      (rest>0?`<div class="danger-box">Sobra: ${fmtMoney(rest)} (não será aplicada)</div>`:'');
+  };
+  m.el.querySelectorAll('.tabs button').forEach(b=>{
+    b.onclick = ()=>{
+      m.el.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      modo = b.dataset.modo;
+      m.el.querySelector('#divManual').classList.toggle('hidden',modo!=='manual');
+      m.el.querySelector('#divAuto').classList.toggle('hidden',modo!=='auto');
+      if(modo==='auto') calcAuto();
+    };
+  });
+  const upPessoa = ()=>{ Object.keys(abatimentos).forEach(k=>delete abatimentos[k]); renderDividas(); if(modo==='auto') calcAuto(); };
+  m.el.querySelector('#rcPessoa').onchange = upPessoa;
+  m.el.querySelector('#rcValor').oninput = ()=>{ if(modo==='auto') calcAuto(); };
+  renderDividas();
+
+  m.el.querySelector('#canc').onclick = m.close;
+  m.el.querySelector('#ok').onclick = async ()=>{
+    const pid = m.el.querySelector('#rcPessoa').value;
+    const valor = parseMoney(m.el.querySelector('#rcValor').value);
+    if(valor<=0){toast('Informe o valor','error');return;}
+    if(modo==='auto') calcAuto();
+    const totalAb = Object.values(abatimentos).reduce((s,v)=>s+v,0);
+    if(totalAb===0){toast('Nenhum abatimento definido','error');return;}
+    if(totalAb>valor){toast('Abatimentos excedem o valor recebido','error');return;}
+    for(const did in abatimentos){
+      const d = State.dividas.find(x=>x.id===did);
+      if(!d || abatimentos[did]>d.saldo){toast('Abatimento inválido','error');return;}
+    }
+    const saldoAntes = saldoPessoa(pid);
+    const ok = await confirmar(`Confirmar recebimento de ${fmtMoney(valor)} de ${(State.clientes.find(c=>c.id===pid)||{}).nome}?`,'Confirmar Recebimento');
+    if(!ok) return;
+    const pg = {
+      id:uid(), pessoaId:pid, valor,
+      data:new Date(m.el.querySelector('#rcData').value).toISOString(),
+      forma:m.el.querySelector('#rcForma').value,
+      obs:m.el.querySelector('#rcObs').value.trim(),
+      saldoAnterior:saldoAntes, saldoPosterior:Math.max(0,saldoAntes-totalAb)
+    };
+    State.pagamentos.push(pg); await dbPut('pagamentos',pg);
+    for(const did in abatimentos){
+      const val = abatimentos[did];
+      if(val<=0) continue;
+      const d = State.dividas.find(x=>x.id===did);
+      const dist = {id:uid(),pagamentoId:pg.id,dividaId:did,valor:val};
+      State.distrib.push(dist); await dbPut('distribuicoes',dist);
+      d.saldo = calcularSaldo(d);
+      await dbPut('dividas',d);
+    }
+    await logHist('recebimento',pg.id,null,{pessoaId:pid,valor,distribuicoes:{...abatimentos}});
+    m.close();
+    toast('Recebimento registrado','success');
+    verComprovante(pg.id);
+  };
+}
+
+function verComprovante(pagId){
+  const pg = State.pagamentos.find(p=>p.id===pagId);
+  if(!pg) return;
+  const pes = State.clientes.find(c=>c.id===pg.pessoaId)||{nome:'?'};
+  const dists = State.distrib.filter(d=>d.pagamentoId===pg.id);
+  const cfg = State.config;
+  const html = `
+    <div style="background:#fff;padding:16px" id="compWrap">
+      <div style="text-align:center;border-bottom:2px solid #0a3d8f;padding-bottom:10px;margin-bottom:12px">
+        <div style="font-size:18px;font-weight:900;color:#0a3d8f">${esc(cfg.nomeFantasia||'CASA DA ELÉTRICA')}</div>
+        <div style="font-size:11px">${esc(cfg.razaoSocial||'')}</div>
+        <div style="font-size:11px">${cfg.cnpj?'CNPJ: '+esc(cfg.cnpj):''} ${cfg.telefone?'· '+esc(cfg.telefone):''}</div>
+        <div style="background:#ffc400;color:#0a3d8f;padding:4px 12px;border-radius:6px;font-weight:900;display:inline-block;margin-top:6px;font-size:12px">COMPROVANTE DE PAGAMENTO</div>
+      </div>
+      <div style="font-size:13px;line-height:1.7">
+        <div><b>Pagador:</b> ${esc(pes.nome)}</div>
+        <div><b>Data:</b> ${fmtDateTime(pg.data)}</div>
+        <div><b>Valor recebido:</b> <span style="color:#2e7d32;font-weight:900;font-size:16px">${fmtMoney(pg.valor)}</span></div>
+        <div><b>Forma:</b> ${esc(pg.forma)}</div>
+        <hr style="margin:8px 0;border:none;border-top:1px dashed #999">
+        <div><b>Dívidas abatidas:</b></div>
+        ${dists.map(d=>{
+          const dv = State.dividas.find(x=>x.id===d.dividaId);
+          return `<div style="display:flex;justify-content:space-between;font-size:12px"><span>• ${esc(dv?dv.descricao:'?')}</span><span>${fmtMoney(d.valor)}</span></div>`;
+        }).join('')}
+        <hr style="margin:8px 0;border:none;border-top:1px dashed #999">
+        <div><b>Saldo anterior:</b> ${fmtMoney(pg.saldoAnterior)}</div>
+        <div><b>Saldo posterior:</b> ${fmtMoney(pg.saldoPosterior)}</div>
+        ${pg.obs?`<div><b>Obs:</b> ${esc(pg.obs)}</div>`:''}
+      </div>
+      <div style="text-align:center;margin-top:20px;font-size:10px;color:#666">${esc(cfg.rodapePadrao||'')}</div>
+    </div>
+  `;
+  const m = openModal('Comprovante',html,
+    `<button class="btn ghost" id="fechar">Fechar</button><button class="btn yellow" id="png">🖼 PNG</button><button class="btn" id="pdf">📄 PDF</button>`,{maxWidth:'520px'});
+  m.el.querySelector('#fechar').onclick = m.close;
+  m.el.querySelector('#png').onclick = ()=>exportarPNG(m.el.querySelector('#compWrap'),'comprovante_'+pg.id);
+  m.el.querySelector('#pdf').onclick = ()=>exportarPDF(m.el.querySelector('#compWrap'),'comprovante_'+pg.id);
+}
+
+// ============================================================
+// RELATÓRIOS
+// ============================================================
+function renderRelatorios(el){
+  const hj = todayISO();
+  const mes = hj.slice(0,7);
+  const pessoas = State.clientes.filter(c=>saldoPessoa(c.id)>0).map(c=>({p:c,saldo:saldoPessoa(c.id)})).sort((a,b)=>b.saldo-a.saldo);
+  const prodCount = {};
+  State.dividas.filter(d=>!d.estornada).forEach(d=>(d.itens||[]).forEach(i=>{
+    const k = i.descricao;
+    prodCount[k] = (prodCount[k]||0) + i.qtd;
+  }));
+  const topProd = Object.entries(prodCount).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  const vencidas = State.dividas.filter(d=>!d.estornada && d.saldo>0 && d.vencimento<hj);
+  const recebMes = State.pagamentos.filter(p=>p.data.slice(0,7)===mes).sort((a,b)=>b.data.localeCompare(a.data));
+
+  el.innerHTML = `
+    <h1>📊 Relatórios</h1>
+    <div class="grid c2">
+      <div class="kpi"><div class="lbl">A receber</div><div class="val">${fmtMoney(totalReceber())}</div></div>
+      <div class="kpi danger"><div class="lbl">Vencido</div><div class="val">${fmtMoney(totalVencido())}</div></div>
+      <div class="kpi success"><div class="lbl">Em dia</div><div class="val">${fmtMoney(totalEmDia())}</div></div>
+      <div class="kpi"><div class="lbl">Recebido (mês)</div><div class="val">${fmtMoney(totalRecebidoMes())}</div></div>
+    </div>
+    <h2>👥 Maiores devedores</h2>
+    <div class="card">
+      ${pessoas.length?pessoas.slice(0,10).map((x,i)=>`<div class="list-item"><span>${i+1}. ${esc(x.p.nome)}</span><span class="r">${fmtMoney(x.saldo)}</span></div>`).join(''):'<div class="empty">Ninguém devendo.</div>'}
+    </div>
+    <h2>⚠️ Dívidas vencidas</h2>
+    <div class="card">
+      ${vencidas.length?vencidas.map(d=>{
+        const p = State.clientes.find(c=>c.id===d.pessoaId)||{nome:'?'};
+        return `<div class="list-item"><div class="l"><b>${esc(p.nome)}</b><div class="mini">${esc(d.descricao)} · venc ${fmtDate(d.vencimento)}</div></div><span class="r" style="color:var(--danger)">${fmtMoney(d.saldo)}</span></div>`;
+      }).join(''):'<div class="empty">Nenhuma dívida vencida.</div>'}
+    </div>
+    <h2>📦 Produtos mais retirados (fiado)</h2>
+    <div class="card">
+      ${topProd.length?topProd.map((x,i)=>`<div class="list-item"><span>${i+1}. ${esc(x[0])}</span><span class="r">${x[1]}</span></div>`).join(''):'<div class="empty">Sem dados.</div>'}
+    </div>
+    <h2>💰 Recebimentos do mês</h2>
+    <div class="card">
+      ${recebMes.length?recebMes.map(p=>{
+        const pe = State.clientes.find(c=>c.id===p.pessoaId)||{nome:'?'};
+        return `<div class="list-item"><div class="l"><b>${esc(pe.nome)}</b><div class="mini">${fmtDateTime(p.data)} · ${esc(p.forma)}</div></div><span class="r" style="color:var(--success)">${fmtMoney(p.valor)}</span></div>`;
+      }).join(''):'<div class="empty">Sem recebimentos.</div>'}
+    </div>
+    <h2>📋 Orçamentos por situação</h2>
+    <div class="card">
+      ${['em_aberto','enviado','aprovado','recusado','vencido'].map(s=>{
+        const n = State.orcamentos.filter(o=>o.situacao===s).length;
+        const tot = State.orcamentos.filter(o=>o.situacao===s).reduce((x,o)=>x+o.total,0);
+        return `<div class="list-item"><span>${s.replace('_',' ')}</span><span class="r">${n} · ${fmtMoney(tot)}</span></div>`;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ============================================================
+// BACKUP
+// ============================================================
+function renderBackup(el){
+  el.innerHTML = `
+    <h1>💾 Backup e Restauração</h1>
+    <div class="card">
+      <h3>📤 Backup completo</h3>
+      <p class="mini">Exporta todos os dados em um arquivo JSON.</p>
+      <button class="btn block" style="margin-top:8px" onclick="fazerBackup()">⬇️ Baixar Backup JSON</button>
+    </div>
+    <div class="card">
+      <h3>📥 Restaurar backup</h3>
+      <p class="mini">Substitui todos os dados atuais. Um backup de segurança será gerado antes.</p>
+      <div class="file-btn" style="display:block;margin-top:8px">
+        <button class="btn outline block">📁 Selecionar arquivo JSON</button>
+        <input type="file" accept=".json,application/json" id="fileRestore">
+      </div>
+    </div>
+    <div class="card">
+      <h3>⚠️ Zona de perigo</h3>
+      <button class="btn danger block" onclick="resetarTudo()">🗑️ Apagar todos os dados</button>
+    </div>
+    <div class="info-box">Nome do programa: <b>WBS System</b>. Os dados ficam salvos apenas neste navegador.</div>
+  `;
+  $('#fileRestore').onchange = handleRestoreFile;
+}
+
+async function fazerBackup(){
+  const dump = {
+    versao:'1.0', app:'WBS System', geradoEm:nowISO(),
+    produtos:State.produtos, categorias:State.categorias, clientes:State.clientes,
+    orcamentos:State.orcamentos, retiradas:State.retiradas, dividas:State.dividas,
+    pagamentos:State.pagamentos, distrib:State.distrib, estornos:State.estornos,
+    historico:State.historico, classificacoes:State.classificacoes,
+    config:State.config, contadorOrcamentos: await dbGet('contador','orcamentos')
+  };
+  const blob = new Blob([JSON.stringify(dump,null,2)],{type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  const d = new Date();
+  a.download = `backup_WBS_System_${d.toISOString().slice(0,10)}.json`;
+  a.click();
+  toast('Backup gerado','success');
+}
+
+async function handleRestoreFile(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!data.app || data.app!=='WBS System'){toast('Arquivo inválido','error');return;}
+    const resumo = `Produtos: ${(data.produtos||[]).length}\nCategorias: ${(data.categorias||[]).length}\nClientes: ${(data.clientes||[]).length}\nOrçamentos: ${(data.orcamentos||[]).length}\nDívidas: ${(data.dividas||[]).length}\nPagamentos: ${(data.pagamentos||[]).length}\nGerado em: ${fmtDateTime(data.geradoEm)}\nVersão: ${esc(data.versao||'?')}`;
+    const ok = await confirmar(`Restaurar backup com estes dados?\n\n${resumo}\n\nOs dados atuais serão substituídos.`,'Restaurar Backup');
+    if(!ok) return;
+    await fazerBackup();
+    for(const s of ['produtos','categorias','clientes','orcamentos','retiradas','dividas','pagamentos','distribuicoes','estornos','historico','config','classificacoes','contador']){
+      await dbClear(s);
+    }
+    const load = async (store,arr)=>{ for(const x of (arr||[])) await dbPut(store,x); };
+    await load('produtos',data.produtos);
+    await load('categorias',data.categorias);
+    await load('clientes',data.clientes);
+    await load('orcamentos',data.orcamentos);
+    await load('retiradas',data.retiradas);
+    await load('dividas',data.dividas);
+    await load('pagamentos',data.pagamentos);
+    await load('distribuicoes',data.distrib);
+    await load('estornos',data.estornos);
+    await load('historico',data.historico);
+    await load('classificacoes',data.classificacoes);
+    if(data.contadorOrcamentos) await dbPut('contador',data.contadorOrcamentos);
+    for(const k in (data.config||{})){ await dbPut('config',{chave:k,valor:data.config[k]}); }
+    await loadState();
+    toast('Backup restaurado com sucesso','success');
+    go('home');
+  }catch(err){
+    console.error(err);
+    toast('Erro ao restaurar: '+err.message,'error');
+  }
+}
+
+async function resetarTudo(){
+  const ok = await confirmar('ATENÇÃO: Todos os dados serão apagados permanentemente. Um backup será baixado antes. Continuar?','Apagar Tudo');
+  if(!ok) return;
+  const ok2 = await confirmar('Tem certeza absoluta?','Confirmação Final');
+  if(!ok2) return;
+  await fazerBackup();
+  for(const s of ['produtos','categorias','clientes','orcamentos','retiradas','dividas','pagamentos','distribuicoes','estornos','historico','config','classificacoes','contador']){
+    await dbClear(s);
+  }
+  await seedDefaults();
+  await loadState();
+  toast('Dados apagados','success');
+  go('home');
+}
+
+// ============================================================
+// CONFIG
+// ============================================================
+function renderConfig(el){
+  const c = State.config;
+  el.innerHTML = `
+    <h1>⚙️ Configurações</h1>
+    <div class="card">
+      <h3>🏢 Dados da empresa</h3>
+      <div class="field"><label>Nome fantasia</label><input id="cfNomeF" value="${esc(c.nomeFantasia||'')}"></div>
+      <div class="field"><label>Razão social</label><input id="cfRazao" value="${esc(c.razaoSocial||'')}"></div>
+      <div class="field"><label>CNPJ</label><input id="cfCnpj" value="${esc(c.cnpj||'')}"></div>
+      <div class="field"><label>Endereço</label><input id="cfEnd" value="${esc(c.endereco||'')}"></div>
+      <div class="row">
+        <div class="field"><label>CEP</label><input id="cfCep" value="${esc(c.cep||'')}"></div>
+        <div class="field"><label>Telefone</label><input id="cfTel" value="${esc(c.telefone||'')}"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>WhatsApp</label><input id="cfZap" value="${esc(c.whatsapp||'')}"></div>
+        <div class="field"><label>PIX</label><input id="cfPix" value="${esc(c.pix||'')}"></div>
+      </div>
+      <div class="field"><label>Logotipo (URL ou dataURL)</label><input id="cfLogo" value="${esc(c.logo||'')}"></div>
+      <div class="field"><label>Rodapé padrão</label><input id="cfRod" value="${esc(c.rodapePadrao||'')}"></div>
+      <h3 style="margin-top:14px">📝 Orçamentos</h3>
+      <div class="row">
+        <div class="field"><label>Validade padrão (dias)</label><input type="number" id="cfVal" value="${c.validadePadrao||7}"></div>
+        <div class="field"><label>Modelo padrão</label>
+          <select id="cfMod"><option value="moderno" ${c.modeloPadrao==='moderno'?'selected':''}>Moderno</option><option value="tradicional" ${c.modeloPadrao==='tradicional'?'selected':''}>Tradicional</option></select>
+        </div>
+      </div>
+      <h3 style="margin-top:14px">💳 Fiado</h3>
+      <div class="field"><label>Prazo padrão (dias)</label><input type="number" id="cfPrazo" value="${c.prazoFiadoPadrao||15}"></div>
+      <button class="btn block" style="margin-top:14px" onclick="salvarConfiguracoes()">💾 Salvar Configurações</button>
+    </div>
+    <div class="info-box">Programa: <b>WBS System</b> · Versão 1.0 · Dados salvos localmente via IndexedDB.</div>
+  `;
+}
+
+async function salvarConfiguracoes(){
+  await saveConfig('nomeFantasia',$('#cfNomeF').value.trim());
+  await saveConfig('razaoSocial',$('#cfRazao').value.trim());
+  await saveConfig('cnpj',$('#cfCnpj').value.trim());
+  await saveConfig('endereco',$('#cfEnd').value.trim());
+  await saveConfig('cep',$('#cfCep').value.trim());
+  await saveConfig('telefone',$('#cfTel').value.trim());
+  await saveConfig('whatsapp',$('#cfZap').value.trim());
+  await saveConfig('pix',$('#cfPix').value.trim());
+  await saveConfig('logo',$('#cfLogo').value.trim());
+  await saveConfig('rodapePadrao',$('#cfRod').value.trim());
+  await saveConfig('validadePadrao',parseInt($('#cfVal').value)||7);
+  await saveConfig('modeloPadrao',$('#cfMod').value);
+  await saveConfig('prazoFiadoPadrao',parseInt($('#cfPrazo').value)||15);
+  toast('Configurações salvas','success');
+}
+
+// ============================================================
+// SEED
+// ============================================================
+async function seedDefaults(){
+  await dbPut('clientes',{
+    id:'consumidor_final', nome:'CONSUMIDOR FINAL',
+    telefone:'', whatsapp:'', doc:'', endereco:'', obs:'',
+    limite:0, criadoEm:nowISO(), padrao:true
+  });
+  const def = {
+    nomeFantasia:'CASA DA ELÉTRICA', razaoSocial:'CASA DA ELÉTRICA',
+    cnpj:'', endereco:'', cep:'', telefone:'', whatsapp:'', pix:'',
+    logo:'', rodapePadrao:'Obrigado pela preferência!',
+    validadePadrao:7, modeloPadrao:'moderno', prazoFiadoPadrao:15
+  };
+  for(const k in def){ await dbPut('config',{chave:k,valor:def[k]}); }
+  await dbPut('contador',{nome:'orcamentos',valor:0});
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function init(){
+  try{
+    await openDB();
+    await loadState();
+    if(!State.clientes.some(c=>c.id==='consumidor_final')){
+      await dbPut('clientes',{
+        id:'consumidor_final', nome:'CONSUMIDOR FINAL',
+        telefone:'', whatsapp:'', doc:'', endereco:'', obs:'',
+        limite:0, criadoEm:nowISO(), padrao:true
+      });
+      await loadState();
+    }
+    recalcDividas();
+
+    // Botão hamburguer no header
+    const sbBtn = document.createElement('button');
+    sbBtn.className='hamburger'; sbBtn.innerHTML='☰'; sbBtn.id='hamburgerBtn';
+    sbBtn.onclick = ()=>{ if(sidebarAberto) fecharSidebar(); else abrirSidebar(); };
+    $('header').prepend(sbBtn);
+    $('#sbOverlay').onclick = fecharSidebar;
+
+    renderNav();
+    go('home');
+  }catch(err){
+    console.error('Erro init:',err);
+    document.getElementById('app').innerHTML = '<div class="empty"><div class="big">⚠️</div>Erro ao iniciar o banco: '+esc(err.message)+'</div>';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
